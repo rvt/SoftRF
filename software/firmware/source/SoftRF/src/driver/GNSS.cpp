@@ -287,6 +287,26 @@ const uint8_t factoryUBX[] PROGMEM = { 0xB5, 0x62, 0x06, 0x09, 0x0D, 0x00, 0xFF,
                                        0xFB, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                                        0xFF, 0xFF, 0x00, 0x00, 0x17, 0x2B, 0x7E } ;
 
+ /* Stratux Setup: enable GPS & Galileo & Beidou */
+const uint8_t setGNSS[] PROGMEM = {0x00, 0x00, 0xFF, 0x07,
+                                   0x00, 0x08, 0x10, 0x00, 0x01, 0x00, 0x01, 0x01,  /* enable GPS */
+                                   0x01, 0x01, 0x03, 0x00, 0x01, 0x00, 0x01, 0x01,  /* enable SBAS */
+                                   0x02, 0x08, 0x08, 0x00, 0x01, 0x00, 0x01, 0x01,  /* enable Galileo */
+                                   0x04, 0x00, 0x08, 0x00, 0x00, 0x00, 0x01, 0x01,  /* disable IMES */
+                                   0x03, 0x08, 0x10, 0x00, 0x01, 0x00, 0x01, 0x01,  /* enable Beidou */
+                                   0x05, 0x01, 0x03, 0x00, 0x01, 0x00, 0x01, 0x01,  /* enable QZSS */
+                                   0x06, 0x08, 0x10, 0x00, 0x00, 0x00, 0x01, 0x01}; /* disable Glonass */
+
+ /* Stratux Setup: set NMEA protocol version an numbering */
+const uint8_t setNMEA[] PROGMEM = {0x00, 0x40, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00,  /* NMEA protocol v4.0 extended */
+                                   0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00,
+                                   0x00, 0x00, 0x00, 0x00};
+
+ /* Stratux Setup: configure SBAS */
+const uint8_t setSBAS[] PROGMEM = {0x01, 0x03, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00}; /* disable integrity, enable auto-scan */
+
+ /* Stratux Setup: set update rate */
+//const uint8_t setRATE[] PROGMEM = {0xF4, 0x01, 0x01, 0x00, 0x01, 0x00}; /* set to 2Hz */
 
 #if defined(USE_GNSS_PSM)
 static bool gnss_psm_active = false;
@@ -408,6 +428,22 @@ static void setup_UBX()
   SoC->swSer_begin(baudrate);
 #endif
 
+  msglen = makeUBXCFG(0x06, 0x3E, sizeof(setGNSS), setGNSS);
+  sendUBX(GNSSbuf, msglen);
+  gnss_set_sucess = getUBX_ACK(0x06, 0x3E);
+
+  msglen = makeUBXCFG(0x06, 0x17, sizeof(setNMEA), setNMEA);
+  sendUBX(GNSSbuf, msglen);
+  gnss_set_sucess = getUBX_ACK(0x06, 0x17);
+
+  msglen = makeUBXCFG(0x06, 0x16, sizeof(setSBAS), setSBAS);
+  sendUBX(GNSSbuf, msglen);
+  gnss_set_sucess = getUBX_ACK(0x06, 0x16);
+
+  //msglen = makeUBXCFG(0x06, 0x08, sizeof(setRATE), setRATE);
+  //sendUBX(GNSSbuf, msglen);
+  //gnss_set_sucess = getUBX_ACK(0x06, 0x08);
+
   GNSS_DEBUG_PRINTLN(F("Airborne <2g navigation mode: "));
 
   // Set the navigation mode (Airborne, < 2g)
@@ -432,7 +468,7 @@ static void setup_UBX()
   GNSS_DEBUG_PRINTLN(F("Switching off NMEA GSV: "));
 
   msglen = makeUBXCFG(0x06, 0x01, sizeof(setGSV), setGSV);
-  sendUBX(GNSSbuf, msglen);
+  //sendUBX(GNSSbuf, msglen);
   gnss_set_sucess = getUBX_ACK(0x06, 0x01);
 
   if (!gnss_set_sucess) {
@@ -442,7 +478,7 @@ static void setup_UBX()
   GNSS_DEBUG_PRINTLN(F("Switching off NMEA VTG: "));
 
   msglen = makeUBXCFG(0x06, 0x01, sizeof(setVTG), setVTG);
-  sendUBX(GNSSbuf, msglen);
+  //sendUBX(GNSSbuf, msglen);
   gnss_set_sucess = getUBX_ACK(0x06, 0x01);
 
   if (!gnss_set_sucess) {
@@ -454,7 +490,7 @@ static void setup_UBX()
   GNSS_DEBUG_PRINTLN(F("Switching off NMEA GSA: "));
 
   msglen = makeUBXCFG(0x06, 0x01, sizeof(setGSA), setGSA);
-  sendUBX(GNSSbuf, msglen);
+  //sendUBX(GNSSbuf, msglen);
   gnss_set_sucess = getUBX_ACK(0x06, 0x01);
 
   if (!gnss_set_sucess) {
@@ -638,6 +674,10 @@ static bool ublox_setup()
   // Set the navigation mode (Airborne, 1G)
   // Turning off some GPS NMEA sentences on the uBlox modules
   setup_UBX();
+  //Serial_GNSS_Out.write("$PUBX,40,GLL,0,0,0,0,0*40\r\n"); delay(250);
+  //Serial_GNSS_Out.write("$PUBX,40,GSV,1,1,1,1,0*45\r\n"); delay(250);
+  //Serial_GNSS_Out.write("$PUBX,40,VTG,1,1,1,1.1*41\r\n"); delay(250);
+  //Serial_GNSS_Out.write("$PUBX,40,GSA,1,1,1,1,0*52\r\n"); delay(250);
 #else
   //Serial_GNSS_Out.write("$PUBX,41,1,0007,0003,9600,0*10\r\n");
   Serial_GNSS_Out.write("$PUBX,41,1,0007,0003,38400,0*20\r\n");
@@ -783,9 +823,9 @@ static bool sony_setup()
 
   /* GGA + GSA + RMC */
   Serial_GNSS_Out.write("@BSSL 0x25\r\n"); delay(250);
-  /* GPS + GLONASS. This command must be issued at “Idle” mode */
+  /* GPS + GLONASS. This command must be issued at ï¿½Idleï¿½ mode */
   Serial_GNSS_Out.write("@GNS 3\r\n");     delay(250);
-  /*  Positioning algorithm. This command must be issued at “Idle” mode */
+  /*  Positioning algorithm. This command must be issued at ï¿½Idleï¿½ mode */
   Serial_GNSS_Out.write("@GUSE 0\r\n");    delay(250);
 
 #if SOC_GPIO_PIN_GNSS_PPS != SOC_UNUSED_PIN

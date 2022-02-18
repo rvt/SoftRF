@@ -257,11 +257,12 @@ const gnss_chip_ops_t generic_nmea_ops = {
 
 #if !defined(EXCLUDE_GNSS_UBLOX)
  /* CFG-MSG */
-const uint8_t setGLL[] PROGMEM = {0xF0, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
-const uint8_t setGSV[] PROGMEM = {0xF0, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
-const uint8_t setVTG[] PROGMEM = {0xF0, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
+ /*                               Class ID    DDC   UART1 UART2 USB   I2C   Res */
+const uint8_t setGLL[] PROGMEM = {0xF0, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01}; /* disable GLL */
+const uint8_t setGSV[] PROGMEM = {0xF0, 0x03, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01}; /* enable GSV for Stratux */
+const uint8_t setVTG[] PROGMEM = {0xF0, 0x05, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01}; /* enable VTG for Stratux */
 #if !defined(NMEA_TCP_SERVICE)
-const uint8_t setGSA[] PROGMEM = {0xF0, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
+const uint8_t setGSA[] PROGMEM = {0xF0, 0x02, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01}; /* enable GSA for Stratux */
 #endif
  /* CFG-PRT */
 uint8_t setBR[] = {0x01, 0x00, 0x00, 0x00, 0xD0, 0x08, 0x00, 0x00, 0x00, 0x96,
@@ -287,7 +288,7 @@ const uint8_t factoryUBX[] PROGMEM = { 0xB5, 0x62, 0x06, 0x09, 0x0D, 0x00, 0xFF,
                                        0xFB, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                                        0xFF, 0xFF, 0x00, 0x00, 0x17, 0x2B, 0x7E } ;
 
- /* Stratux Setup: enable GPS & Galileo & Beidou */
+ /* Stratux Setup: enable GPS & Galileo & Beidou for u-blox M8N*/
 const uint8_t setGNSS[] PROGMEM = {0x00, 0x00, 0xFF, 0x07,
                                    0x00, 0x08, 0x10, 0x00, 0x01, 0x00, 0x01, 0x01,  /* enable GPS */
                                    0x01, 0x01, 0x03, 0x00, 0x01, 0x00, 0x01, 0x01,  /* enable SBAS */
@@ -297,7 +298,7 @@ const uint8_t setGNSS[] PROGMEM = {0x00, 0x00, 0xFF, 0x07,
                                    0x05, 0x01, 0x03, 0x00, 0x01, 0x00, 0x01, 0x01,  /* enable QZSS */
                                    0x06, 0x08, 0x10, 0x00, 0x00, 0x00, 0x01, 0x01}; /* disable Glonass */
 
- /* Stratux Setup: set NMEA protocol version an numbering */
+ /* Stratux Setup: set NMEA protocol version and numbering */
 const uint8_t setNMEA[] PROGMEM = {0x00, 0x40, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00,  /* NMEA protocol v4.0 extended */
                                    0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00,
                                    0x00, 0x00, 0x00, 0x00};
@@ -468,7 +469,7 @@ static void setup_UBX()
   GNSS_DEBUG_PRINTLN(F("Switching off NMEA GSV: "));
 
   msglen = makeUBXCFG(0x06, 0x01, sizeof(setGSV), setGSV);
-  //sendUBX(GNSSbuf, msglen);
+  sendUBX(GNSSbuf, msglen);
   gnss_set_sucess = getUBX_ACK(0x06, 0x01);
 
   if (!gnss_set_sucess) {
@@ -478,7 +479,7 @@ static void setup_UBX()
   GNSS_DEBUG_PRINTLN(F("Switching off NMEA VTG: "));
 
   msglen = makeUBXCFG(0x06, 0x01, sizeof(setVTG), setVTG);
-  //sendUBX(GNSSbuf, msglen);
+  sendUBX(GNSSbuf, msglen);
   gnss_set_sucess = getUBX_ACK(0x06, 0x01);
 
   if (!gnss_set_sucess) {
@@ -490,7 +491,7 @@ static void setup_UBX()
   GNSS_DEBUG_PRINTLN(F("Switching off NMEA GSA: "));
 
   msglen = makeUBXCFG(0x06, 0x01, sizeof(setGSA), setGSA);
-  //sendUBX(GNSSbuf, msglen);
+  sendUBX(GNSSbuf, msglen);
   gnss_set_sucess = getUBX_ACK(0x06, 0x01);
 
   if (!gnss_set_sucess) {
@@ -823,9 +824,9 @@ static bool sony_setup()
 
   /* GGA + GSA + RMC */
   Serial_GNSS_Out.write("@BSSL 0x25\r\n"); delay(250);
-  /* GPS + GLONASS. This command must be issued at �Idle� mode */
+  /* GPS + GLONASS. This command must be issued at Idle mode */
   Serial_GNSS_Out.write("@GNS 3\r\n");     delay(250);
-  /*  Positioning algorithm. This command must be issued at �Idle� mode */
+  /*  Positioning algorithm. This command must be issued at Idle mode */
   Serial_GNSS_Out.write("@GUSE 0\r\n");    delay(250);
 
 #if SOC_GPIO_PIN_GNSS_PPS != SOC_UNUSED_PIN

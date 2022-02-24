@@ -318,7 +318,14 @@ const uint8_t setNMEA_U8[] PROGMEM = {0x00, 0x40, 0x00, 0x02, 0x00, 0x00, 0x00, 
  /* Stratux Setup: configure SBAS */
 const uint8_t setSBAS[] PROGMEM = {0x01, 0x03, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00}; /* disable integrity, enable auto-scan */
 
+ /* Stratux Setup: load default configuration */
+//const uint8_t defaultCFG[] PROGMEM = {0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03};
+
+ /* Stratux Setup: save configuration */
+//const uint8_t saveCFG[] PROGMEM = {0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03};
+
  /* Stratux Setup: set update rate */
+//const uint8_t setRATE[] PROGMEM = {0xE8, 0x03, 0x01, 0x00, 0x01, 0x00}; /* set to 1Hz */
 //const uint8_t setRATE[] PROGMEM = {0xF4, 0x01, 0x01, 0x00, 0x01, 0x00}; /* set to 2Hz */
 
 #if defined(USE_GNSS_PSM)
@@ -445,6 +452,12 @@ static void setup_UBX()
 
   byte version = ublox_version();
 
+  //if ((version == GNSS_MODULE_U6) || (version == GNSS_MODULE_U7) || (version == GNSS_MODULE_U8)) {
+  // msglen = makeUBXCFG(0x06, 0x09, sizeof(defaultCFG), defaultCFG);
+  // sendUBX(GNSSbuf, msglen);
+  // gnss_set_sucess = getUBX_ACK(0x06, 0x09);
+  //}
+
   if ((version == GNSS_MODULE_U6) || (version == GNSS_MODULE_U7)) {
     msglen = makeUBXCFG(0x06, 0x3E, sizeof(setGNSS_U67), setGNSS_U67);
     sendUBX(GNSSbuf, msglen);
@@ -473,6 +486,10 @@ static void setup_UBX()
     //msglen = makeUBXCFG(0x06, 0x08, sizeof(setRATE), setRATE);
     //sendUBX(GNSSbuf, msglen);
     //gnss_set_sucess = getUBX_ACK(0x06, 0x08);
+
+    //msglen = makeUBXCFG(0x06, 0x09, sizeof(saveCFG), saveCFG);
+    //sendUBX(GNSSbuf, msglen);
+    //gnss_set_sucess = getUBX_ACK(0x06, 0x09);
   }
 
   GNSS_DEBUG_PRINTLN(F("Airborne <2g navigation mode: "));

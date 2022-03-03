@@ -16,6 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define STRATUX /* enable for Stratux build */
+
 #if defined(ARDUINO)
 #include <Arduino.h>
 #endif
@@ -257,13 +259,21 @@ const gnss_chip_ops_t generic_nmea_ops = {
 
 #if !defined(EXCLUDE_GNSS_UBLOX)
  /* CFG-MSG */
+
+#if defined(STRATUX)
  /*                               Class ID    DDC   UART1 UART2 USB   I2C   Res */
 const uint8_t setGLL[] PROGMEM = {0xF0, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01}; /* disable GLL */
 const uint8_t setGSV[] PROGMEM = {0xF0, 0x03, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01}; /* enable GSV for Stratux */
 const uint8_t setVTG[] PROGMEM = {0xF0, 0x05, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01}; /* enable VTG for Stratux */
-#if !defined(NMEA_TCP_SERVICE)
 const uint8_t setGSA[] PROGMEM = {0xF0, 0x02, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01}; /* enable GSA for Stratux */
+#else
+const uint8_t setGLL[] PROGMEM = {0xF0, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
+const uint8_t setGSV[] PROGMEM = {0xF0, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
+const uint8_t setVTG[] PROGMEM = {0xF0, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
+#if !defined(NMEA_TCP_SERVICE)
+const uint8_t setGSA[] PROGMEM = {0xF0, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
 #endif
+#endif /* STRATUX */
  /* CFG-PRT */
 uint8_t setBR[] = {0x01, 0x00, 0x00, 0x00, 0xD0, 0x08, 0x00, 0x00, 0x00, 0x96,
                    0x00, 0x00, 0x07, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00};
@@ -450,6 +460,8 @@ static void setup_UBX()
   SoC->swSer_begin(baudrate);
 #endif
 
+#if defined(STRATUX)
+
   byte version = ublox_version();
 
   //if ((version == GNSS_MODULE_U6) || (version == GNSS_MODULE_U7) || (version == GNSS_MODULE_U8)) {
@@ -491,6 +503,8 @@ static void setup_UBX()
     //sendUBX(GNSSbuf, msglen);
     //gnss_set_sucess = getUBX_ACK(0x06, 0x09);
   }
+
+#endif /* STRATUX */
 
   GNSS_DEBUG_PRINTLN(F("Airborne <2g navigation mode: "));
 

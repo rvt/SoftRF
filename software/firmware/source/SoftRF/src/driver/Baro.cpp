@@ -17,7 +17,7 @@
  */
 
 
-#define EXCLUDE_BMP280 /* required for Stratux build */
+//#define EXCLUDE_BMP280 /* required for Stratux build */
 
 #include "../system/SoC.h"
 

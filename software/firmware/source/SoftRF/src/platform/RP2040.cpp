@@ -32,9 +32,25 @@
 #include "../protocol/data/NMEA.h"
 #include "../protocol/data/GDL90.h"
 #include "../protocol/data/D1090.h"
+#include "../protocol/data/JSON.h"
 
 #include "pico/unique_id.h"
 #include <hardware/watchdog.h>
+//#include <pico/sleep.h>
+
+#include <Adafruit_SPIFlash.h>
+
+extern "C" {
+#include "pico/binary_info.h"
+#include "pico/binary_info/code.h"
+}
+
+#define SOFTRF_DESC "Multifunctional, compatible DIY general aviation proximity awareness system"
+#define SOFTRF_URL  "https://github.com/lyusupov/SoftRF"
+
+#if defined(USE_TINYUSB)
+#include "Adafruit_TinyUSB.h"
+#endif /* USE_TINYUSB */
 
 // SX127x pin mapping
 lmic_pinmap lmic_pins = {
@@ -68,17 +84,88 @@ static struct rst_info reset_info = {
 static uint32_t bootCount __attribute__ ((section (".noinit")));
 static bool wdt_is_active = false;
 
+static RP2040_board_id RP2040_board    = RP2040_RAK11300; /* default */
+
 const char *RP2040_Device_Manufacturer = SOFTRF_IDENT;
-const char *RP2040_Device_Model = "Lego Edition";
-const uint16_t RP2040_Device_Version = SOFTRF_USB_FW_VERSION;
+const char *RP2040_Device_Model        = "Lego Edition";
+const uint16_t RP2040_Device_Version   = SOFTRF_USB_FW_VERSION;
 
 static union {
   pico_unique_board_id_t RP2040_unique_flash_id;
   uint64_t RP2040_chip_id;
 };
 
+Adafruit_FlashTransport_RP2040 HWFlashTransport;
+Adafruit_SPIFlash QSPIFlash(&HWFlashTransport);
+
+static Adafruit_SPIFlash *SPIFlash = &QSPIFlash;
+
+/// Flash device list count
+enum {
+  W25Q16JV_IQ_INDEX,
+  EXTERNAL_FLASH_DEVICE_COUNT
+};
+
+/// List of all possible flash devices used by RP2040 boards
+static SPIFlash_Device_t possible_devices[] = {
+  [W25Q16JV_IQ_INDEX] = W25Q16JV_IQ,
+};
+
+static bool RP2040_has_spiflash = false;
+static uint32_t spiflash_id     = 0;
+static bool FATFS_is_mounted    = false;
+
+#if defined(USE_TINYUSB)
+// USB Mass Storage object
+Adafruit_USBD_MSC usb_msc;
+#endif /* USE_TINYUSB */
+
+// file system object from SdFat
+FatFileSystem fatfs;
+
+#define RP2040_JSON_BUFFER_SIZE  1024
+
+StaticJsonBuffer<RP2040_JSON_BUFFER_SIZE> RP2040_jsonBuffer;
+
+// Callback invoked when received READ10 command.
+// Copy disk's data to buffer (up to bufsize) and
+// return number of copied bytes (must be multiple of block size)
+static int32_t RP2040_msc_read_cb (uint32_t lba, void* buffer, uint32_t bufsize)
+{
+  // Note: SPIFLash Bock API: readBlocks/writeBlocks/syncBlocks
+  // already include 4K sector caching internally. We don't need to cache it, yahhhh!!
+  return SPIFlash->readBlocks(lba, (uint8_t*) buffer, bufsize/512) ? bufsize : -1;
+}
+
+// Callback invoked when received WRITE10 command.
+// Process data in buffer to disk's storage and
+// return number of written bytes (must be multiple of block size)
+static int32_t RP2040_msc_write_cb (uint32_t lba, uint8_t* buffer, uint32_t bufsize)
+{
+  // Note: SPIFLash Bock API: readBlocks/writeBlocks/syncBlocks
+  // already include 4K sector caching internally. We don't need to cache it, yahhhh!!
+  return SPIFlash->writeBlocks(lba, buffer, bufsize/512) ? bufsize : -1;
+}
+
+// Callback invoked when WRITE10 command is completed (status received and accepted by host).
+// used to flush any pending cache.
+static void RP2040_msc_flush_cb (void)
+{
+  // sync with flash
+  SPIFlash->syncBlocks();
+
+  // clear file system's cache to force refresh
+  fatfs.cacheClear();
+}
+
 static void RP2040_setup()
 {
+  bi_decl(bi_program_name(SOFTRF_IDENT));
+  bi_decl(bi_program_description(SOFTRF_DESC));
+  bi_decl(bi_program_version_string(SOFTRF_FIRMWARE_VERSION));
+  bi_decl(bi_program_build_date_string(__DATE__));
+  bi_decl(bi_program_url(SOFTRF_URL));
+
   pico_get_unique_board_id(&RP2040_unique_flash_id);
 
 #if SOC_GPIO_RADIO_LED_TX != SOC_UNUSED_PIN
@@ -96,12 +183,14 @@ static void RP2040_setup()
   USBDevice.setDeviceVersion(RP2040_Device_Version);
 #endif /* USE_TINYUSB */
 
-  Serial1.setRX(SOC_GPIO_PIN_CONS_RX);
-  Serial1.setTX(SOC_GPIO_PIN_CONS_TX);
-  Serial1.begin(SERIAL_OUT_BR, SERIAL_OUT_BITS);
+  SerialOutput.setRX(SOC_GPIO_PIN_CONS_RX);
+  SerialOutput.setTX(SOC_GPIO_PIN_CONS_TX);
+  SerialOutput.setFIFOSize(128);
+  SerialOutput.begin(SERIAL_OUT_BR, SERIAL_OUT_BITS);
 
-  Serial2.setRX(SOC_GPIO_PIN_GNSS_RX);
-  Serial2.setTX(SOC_GPIO_PIN_GNSS_TX);
+  Serial_GNSS_In.setRX(SOC_GPIO_PIN_GNSS_RX);
+  Serial_GNSS_In.setTX(SOC_GPIO_PIN_GNSS_TX);
+  Serial_GNSS_In.setFIFOSize(128);
 
   SPI1.setRX(SOC_GPIO_PIN_MISO);
   SPI1.setTX(SOC_GPIO_PIN_MOSI);
@@ -110,10 +199,48 @@ static void RP2040_setup()
 
   Wire1.setSCL(SOC_GPIO_PIN_SCL);
   Wire1.setSDA(SOC_GPIO_PIN_SDA);
+
+  pinMode(SOC_GPIO_PIN_GNSS_RST, INPUT_PULLUP);
+
+  pinMode(SOC_GPIO_PIN_ANT_RXTX, OUTPUT);
+  digitalWrite(SOC_GPIO_PIN_ANT_RXTX, HIGH);
+
+  RP2040_has_spiflash = SPIFlash->begin(possible_devices,
+                                        EXTERNAL_FLASH_DEVICE_COUNT);
+  hw_info.storage = RP2040_has_spiflash ? STORAGE_FLASH : STORAGE_NONE;
+
+  if (RP2040_has_spiflash) {
+    spiflash_id = SPIFlash->getJEDECID();
+
+#if defined(USE_TINYUSB)
+    // Set disk vendor id, product id and revision with string up to 8, 16, 4 characters respectively
+    usb_msc.setID(RP2040_Device_Manufacturer, "External Flash", "1.0");
+
+    // Set callback
+    usb_msc.setReadWriteCallback(RP2040_msc_read_cb,
+                                 RP2040_msc_write_cb,
+                                 RP2040_msc_flush_cb);
+
+    // Set disk size, block size should be 512 regardless of spi flash page size
+    usb_msc.setCapacity(SPIFlash->size()/512, 512);
+
+    // MSC is ready for read/write
+    usb_msc.setUnitReady(true);
+
+    usb_msc.begin();
+#endif /* USE_TINYUSB */
+
+    FATFS_is_mounted = fatfs.begin(SPIFlash);
+  }
 }
 
 static void RP2040_post_init()
 {
+#if 0
+    Serial.println();
+    Serial.print(F("INFO: SPI FLASH JEDEC ID "));
+    Serial.println(spiflash_id, HEX);
+#endif
   {
     Serial.println();
     Serial.println(F("SoftRF Lego Edition Power-on Self Test"));
@@ -123,16 +250,16 @@ static void RP2040_post_init()
     Serial.println(F("Built-in components:"));
 
     Serial.print(F("RADIO   : "));
-    Serial.println(hw_info.rf      == RF_IC_SX1262      ? F("PASS") : F("FAIL"));
+    Serial.println(hw_info.rf      != RF_IC_NONE       ? F("PASS") : F("FAIL"));
     Serial.print(F("GNSS    : "));
-    Serial.println(hw_info.gnss    != GNSS_MODULE_NONE  ? F("PASS") : F("FAIL"));
+    Serial.println(hw_info.gnss    != GNSS_MODULE_NONE ? F("PASS") : F("FAIL"));
 
     Serial.println();
     Serial.println(F("External components:"));
     Serial.print(F("BARO    : "));
-    Serial.println(hw_info.baro    != BARO_MODULE_NONE  ? F("PASS") : F("N/A"));
+    Serial.println(hw_info.baro    != BARO_MODULE_NONE ? F("PASS") : F("N/A"));
     Serial.print(F("DISPLAY : "));
-    Serial.println(hw_info.display != DISPLAY_NONE      ? F("PASS") : F("N/A"));
+    Serial.println(hw_info.display != DISPLAY_NONE     ? F("PASS") : F("N/A"));
 
     Serial.println();
     Serial.println(F("Power-on Self Test is complete."));
@@ -225,12 +352,29 @@ static void RP2040_loop()
 
 static void RP2040_fini(int reason)
 {
+  if (RP2040_has_spiflash) {
+#if defined(USE_TINYUSB)
+    usb_msc.setUnitReady(false);
+//  usb_msc.end(); /* N/A */
+#endif /* USE_TINYUSB */
+  }
+
+  if (SPIFlash != NULL) SPIFlash->end();
+
+  pinMode(SOC_GPIO_PIN_ANT_RXTX, INPUT);
+
 #if defined(USE_TINYUSB)
   // Disable USB
   USBDevice.detach();
 #endif /* USE_TINYUSB */
 
 //  Watchdog.sleep();
+
+//  sleep_run_from_xosc();
+
+#if SOC_GPIO_PIN_BUTTON != SOC_UNUSED_PIN
+//  sleep_goto_dormant_until_edge_high(SOC_GPIO_PIN_BUTTON);
+#endif /* SOC_GPIO_PIN_BUTTON != SOC_UNUSED_PIN */
 
   NVIC_SystemReset();
 }
@@ -338,6 +482,30 @@ static bool RP2040_EEPROM_begin(size_t size)
 static void RP2040_EEPROM_extension(int cmd)
 {
   if (cmd == EEPROM_EXT_LOAD) {
+
+    if ( RP2040_has_spiflash && FATFS_is_mounted ) {
+      File file = fatfs.open("/settings.json", FILE_READ);
+
+      if (file) {
+        // StaticJsonBuffer<RP2040_JSON_BUFFER_SIZE> RP2040_jsonBuffer;
+
+        JsonObject &root = RP2040_jsonBuffer.parseObject(file);
+
+        if (root.success()) {
+          JsonVariant msg_class = root["class"];
+
+          if (msg_class.success()) {
+            const char *msg_class_s = msg_class.as<char*>();
+
+            if (!strcmp(msg_class_s,"SOFTRF")) {
+              parseSettings  (root);
+            }
+          }
+        }
+        file.close();
+      }
+    }
+
     if (settings->mode != SOFTRF_MODE_NORMAL
 #if !defined(EXCLUDE_TEST_MODE)
         &&
@@ -587,8 +755,7 @@ static void RP2040_Button_fini()
 #if SOC_GPIO_PIN_BUTTON != SOC_UNUSED_PIN
   if (hw_info.model == SOFTRF_MODEL_LEGO) {
 //  detachInterrupt(digitalPinToInterrupt(SOC_GPIO_PIN_BUTTON));
-    while (digitalRead(SOC_GPIO_PIN_BUTTON) == LOW);
-//    pinMode(SOC_GPIO_PIN_BUTTON, ANALOG);
+    while (digitalRead(SOC_GPIO_PIN_BUTTON) == HIGH);
   }
 #endif /* SOC_GPIO_PIN_BUTTON != SOC_UNUSED_PIN */
 }

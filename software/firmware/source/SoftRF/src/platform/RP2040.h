@@ -40,10 +40,15 @@
 
 #define LED_STATE_ON            HIGH  // State when LED is litted
 
-#define SerialOutput            Serial1
+#define SerialOutput            Serial2
 
+#if !defined(ARDUINO_ARCH_MBED)
 #define USBSerial               Serial
-#define Serial_GNSS_In          Serial2
+#else
+#define USBSerial               SerialUSB
+#endif /* ARDUINO_ARCH_MBED */
+
+#define Serial_GNSS_In          Serial1
 #define Serial_GNSS_Out         Serial_GNSS_In
 #define UATSerial               Serial
 
@@ -61,6 +66,7 @@ enum rst_reason {
 
 enum RP2040_board_id {
   RP2040_RAK11300,
+  RP2040_RESERVED1,
   RP2040_RPIPICO,
   RP2040_WEACT,
 };
@@ -75,17 +81,22 @@ struct rst_info {
   uint32_t depc;
 };
 
-#if defined(ARDUINO_RASPBERRY_PI_PICO)
+#if defined(ARDUINO_GENERIC_RP2040)
 
-/* Peripherals */
-#define SOC_GPIO_PIN_CONS_RX  (1u)
-#define SOC_GPIO_PIN_CONS_TX  (0u)
+/* Console, I/O SLOT only */
+#define SOC_GPIO_PIN_CONS_RX  (5u)
+#define SOC_GPIO_PIN_CONS_TX  (4u)
 
-#define SOC_GPIO_PIN_GNSS_RX  (5u)
-#define SOC_GPIO_PIN_GNSS_TX  (4u)
+/* RAK1910 (Ublox-7), SENSOR SLOT A only */
+#define SOC_GPIO_PIN_GNSS_RX  (1u)  // J10
+#define SOC_GPIO_PIN_GNSS_TX  (0u)  // J10
+#define SOC_GPIO_PIN_GNSS_PPS (6u)  // IO1, J11
+#define SOC_GPIO_PIN_GNSS_RST (22u) // IO2, J11
 
-#define SOC_GPIO_PIN_STATUS   SOC_UNUSED_PIN // LED (25u) Pico/WeAct
-#define SOC_GPIO_PIN_BUZZER   SOC_UNUSED_PIN
+#define SOC_GPIO_PIN_STATUS   SOC_UNUSED_PIN // LED
+
+/* RAK18001, SENSOR SLOT C */
+#define SOC_GPIO_PIN_BUZZER   (7u)  // IO3
 
 /* SPI0 */
 #define SOC_GPIO_PIN_MOSI0    (19u)
@@ -93,7 +104,7 @@ struct rst_info {
 #define SOC_GPIO_PIN_SCK0     (18u)
 #define SOC_GPIO_PIN_SS0      (17u)
 
-/* SPI1 */
+/* RAK11310, SPI1 */
 #define SOC_GPIO_PIN_MOSI     (11u)
 #define SOC_GPIO_PIN_MISO     (12u)
 #define SOC_GPIO_PIN_SCK      (10u)
@@ -104,35 +115,31 @@ struct rst_info {
 #define SOC_GPIO_PIN_CE       SOC_UNUSED_PIN
 #define SOC_GPIO_PIN_PWR      SOC_UNUSED_PIN
 
-/* SX1262 */
+/* RAK11310, SX1262 */
 #define SOC_GPIO_PIN_RST      (14u)
 #define SOC_GPIO_PIN_BUSY     (15u)
 #define SOC_GPIO_PIN_DIO1     (29u)
 
-/* RF antenna switch */
+/* RAK11310, RF antenna switch */
 #define SOC_GPIO_PIN_ANT_RXTX (25u) // RXEN
 
 /* I2C0 */
 #define SOC_GPIO_PIN_SDA0     (20u)
 #define SOC_GPIO_PIN_SCL0     (21u)
 
-/* I2C1 */
+/* RAK11310, I2C1, J12 */
 #define SOC_GPIO_PIN_SDA      (2u)
 #define SOC_GPIO_PIN_SCL      (3u)
 #define Wire                  Wire1
 
 #define SOC_GPIO_PIN_LED      SOC_UNUSED_PIN
-#define SOC_GPIO_PIN_GNSS_PPS (6u)  // IO1
-#define SOC_GPIO_PIN_GNSS_RST (22u) // IO2
 #define SOC_GPIO_PIN_BATTERY  SOC_UNUSED_PIN // ADC0 (26u) or ADC1 (27u)
-#define SOC_GPIO_PIN_VBUS     (24u) // Pico
-#define SOC_GPIO_PIN_VSYS     (29u) // Pico
-#define SOC_GPIO_PIN_PS       (23u) // Pico
-#define SOC_GPIO_PIN_BUTTON   (23u) // WeAct
+#define SOC_GPIO_PIN_BUTTON   SOC_UNUSED_PIN
 
-#define SOC_GPIO_RADIO_LED_RX SOC_UNUSED_PIN // LED2 (24u)
-#define SOC_GPIO_RADIO_LED_TX SOC_UNUSED_PIN
+#define SOC_GPIO_RADIO_LED_RX SOC_UNUSED_PIN // RAK11310, LED2 (24u)
+#define SOC_GPIO_RADIO_LED_TX SOC_UNUSED_PIN // RAK11310, LED1 (23u)
 
+/* RAK11310 */
 #define SOC_GPIO_PIN_IO1      (6u)
 #define SOC_GPIO_PIN_IO2      (22u)
 #define SOC_GPIO_PIN_IO3      (7u)
@@ -141,6 +148,66 @@ struct rst_info {
 #define SOC_GPIO_PIN_IO6      (8u)
 #define SOC_GPIO_PIN_A0       (26u)
 #define SOC_GPIO_PIN_A1       (27u)
+
+#elif defined(ARDUINO_RASPBERRY_PI_PICO)
+
+/* Console I/O */
+#define SOC_GPIO_PIN_CONS_RX  (5u)
+#define SOC_GPIO_PIN_CONS_TX  (4u)
+
+/* Waveshare Pico-GPS-L76B (MTK) */
+#define SOC_GPIO_PIN_GNSS_RX  (1u)
+#define SOC_GPIO_PIN_GNSS_TX  (0u)
+#define SOC_GPIO_PIN_GNSS_PPS (16u) // R20 (NC by default)
+#define SOC_GPIO_PIN_GNSS_RST SOC_UNUSED_PIN // NA
+#define SOC_GPIO_PIN_GNSS_SBY (17u) // STANDBY
+#define SOC_GPIO_PIN_GNSS_FON (14u) // FORCE_ON
+
+#define SOC_GPIO_PIN_STATUS   SOC_UNUSED_PIN // LED (25u) Pico/WeAct
+#define SOC_GPIO_PIN_BUZZER   SOC_UNUSED_PIN
+
+/* SPI0 */
+#define SOC_GPIO_PIN_MOSI0    (19u)
+#define SOC_GPIO_PIN_MISO0    (16u)
+#define SOC_GPIO_PIN_SCK0     (18u)
+#define SOC_GPIO_PIN_SS0      (17u)
+
+/* Waveshare Pico-LoRa-SX1262-868M, SPI1 */
+#define SOC_GPIO_PIN_MOSI     (11u)
+#define SOC_GPIO_PIN_MISO     (12u)
+#define SOC_GPIO_PIN_SCK      (10u)
+#define SOC_GPIO_PIN_SS       (3u)
+
+/* NRF905 */
+#define SOC_GPIO_PIN_TXE      SOC_UNUSED_PIN
+#define SOC_GPIO_PIN_CE       SOC_UNUSED_PIN
+#define SOC_GPIO_PIN_PWR      SOC_UNUSED_PIN
+
+/* Waveshare Pico-LoRa-SX1262-868M, SX1262 */
+#define SOC_GPIO_PIN_RST      (15u)
+#define SOC_GPIO_PIN_BUSY     (2u)
+#define SOC_GPIO_PIN_DIO1     (20u)
+
+/* Waveshare Pico-LoRa-SX1262-868M, RF antenna switch */
+#define SOC_GPIO_PIN_ANT_RXTX (22u) // RXEN
+
+/* Waveshare Pico-Environment-Sensor, BME280, I2C0 */
+#define SOC_GPIO_PIN_SDA      (20u)
+#define SOC_GPIO_PIN_SCL      (21u)
+
+/* I2C1 */
+#define SOC_GPIO_PIN_SDA1     (26u)
+#define SOC_GPIO_PIN_SCL1     (27u)
+
+#define SOC_GPIO_PIN_LED      SOC_UNUSED_PIN
+#define SOC_GPIO_PIN_BATTERY  SOC_UNUSED_PIN // ADC0 (26u) or ADC1 (27u)
+#define SOC_GPIO_PIN_VBUS     (24u) // Pico
+#define SOC_GPIO_PIN_VSYS     (29u) // Pico
+#define SOC_GPIO_PIN_PS       (23u) // Pico
+#define SOC_GPIO_PIN_BUTTON   (23u) // WeAct
+
+#define SOC_GPIO_RADIO_LED_RX SOC_UNUSED_PIN
+#define SOC_GPIO_RADIO_LED_TX SOC_UNUSED_PIN
 
 #else
 #error "This RP2040 build variant is not supported!"
@@ -153,7 +220,8 @@ struct rst_info {
 //#define EXCLUDE_TRAFFIC_FILTER_EXTENSION
 #define EXCLUDE_LK8EX1
 
-//#define EXCLUDE_GNSS_UBLOX
+//#define EXCLUDE_GNSS_UBLOX    /* Neo-6/7/8 */
+#define ENABLE_UBLOX_RFS        /* revert factory settings (when necessary) */
 #define EXCLUDE_GNSS_SONY
 //#define EXCLUDE_GNSS_MTK
 #define EXCLUDE_GNSS_GOKE
@@ -177,6 +245,12 @@ struct rst_info {
 #define EXCLUDE_OLED_049
 //#define EXCLUDE_OLED_BARO_PAGE
 
+#if !defined(ARDUINO_ARCH_MBED)
+#define USE_BOOTSEL_BUTTON
+#else
+#define EXCLUDE_EEPROM
+#endif /* ARDUINO_ARCH_MBED */
+
 #define USE_BASICMAC
 
 #define USE_TIME_SLOTS
@@ -190,7 +264,11 @@ extern Adafruit_NeoPixel strip;
 #endif /* EXCLUDE_LED_RING */
 
 #if defined(USE_OLED)
+#if defined(ARDUINO_GENERIC_RP2040)
 #define U8X8_OLED_I2C_BUS_TYPE  U8X8_SSD1306_128X64_NONAME_2ND_HW_I2C
+#else
+#define U8X8_OLED_I2C_BUS_TYPE  U8X8_SSD1306_128X64_NONAME_HW_I2C
+#endif /* ARDUINO_GENERIC_RP2040 */
 #endif /* USE_OLED */
 
 #endif /* PLATFORM_RP2040_H */

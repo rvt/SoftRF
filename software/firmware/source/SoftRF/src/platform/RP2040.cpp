@@ -34,23 +34,62 @@
 #include "../protocol/data/D1090.h"
 #include "../protocol/data/JSON.h"
 
-#include "pico/unique_id.h"
 #include <hardware/watchdog.h>
-//#include <pico/sleep.h>
 
-#include <Adafruit_SPIFlash.h>
+#if !defined(ARDUINO_ARCH_MBED)
+#include "pico/unique_id.h"
 
+#define PICO_ON_DEVICE 1
 extern "C" {
 #include "pico/binary_info.h"
-#include "pico/binary_info/code.h"
 }
+#else
+extern "C"
+{
+#include "hardware/flash.h"
+}
+#endif /* ARDUINO_ARCH_MBED */
 
-#define SOFTRF_DESC "Multifunctional, compatible DIY general aviation proximity awareness system"
-#define SOFTRF_URL  "https://github.com/lyusupov/SoftRF"
+#include <Adafruit_SPIFlash.h>
+#include <pico_sleep.h>
 
 #if defined(USE_TINYUSB)
 #include "Adafruit_TinyUSB.h"
 #endif /* USE_TINYUSB */
+
+#define SOFTRF_DESC "Multifunctional, compatible DIY general aviation proximity awareness system"
+#define SOFTRF_URL  "https://github.com/lyusupov/SoftRF"
+
+#if !defined(ARDUINO_ARCH_MBED)
+bi_decl(bi_program_name(SOFTRF_IDENT));
+bi_decl(bi_program_description(SOFTRF_DESC));
+bi_decl(bi_program_version_string(SOFTRF_FIRMWARE_VERSION));
+bi_decl(bi_program_build_date_string(__DATE__));
+bi_decl(bi_program_url(SOFTRF_URL));
+extern char __flash_binary_end;
+bi_decl(bi_binary_end((intptr_t)&__flash_binary_end));
+
+bi_decl(bi_1pin_with_name(SOC_GPIO_PIN_GNSS_RX,  "GNSS RX"));
+bi_decl(bi_1pin_with_name(SOC_GPIO_PIN_GNSS_TX,  "GNSS TX"));
+bi_decl(bi_1pin_with_name(SOC_GPIO_PIN_GNSS_PPS, "GNSS PPS"));
+#if SOC_GPIO_PIN_GNSS_RST != SOC_UNUSED_PIN
+bi_decl(bi_1pin_with_name(SOC_GPIO_PIN_GNSS_RST, "GNSS RST"));
+#endif
+bi_decl(bi_1pin_with_name(SOC_GPIO_PIN_MOSI,     "SX1262 MOSI"));
+bi_decl(bi_1pin_with_name(SOC_GPIO_PIN_MISO,     "SX1262 MISO"));
+bi_decl(bi_1pin_with_name(SOC_GPIO_PIN_SCK,      "SX1262 SCK"));
+bi_decl(bi_1pin_with_name(SOC_GPIO_PIN_SS,       "SX1262 SS"));
+bi_decl(bi_1pin_with_name(SOC_GPIO_PIN_RST,      "SX1262 RST"));
+bi_decl(bi_1pin_with_name(SOC_GPIO_PIN_BUSY,     "SX1262 BUSY"));
+bi_decl(bi_1pin_with_name(SOC_GPIO_PIN_DIO1,     "SX1262 DIO1"));
+bi_decl(bi_1pin_with_name(SOC_GPIO_PIN_ANT_RXTX, "RF ANT PWR"));
+
+bi_decl(bi_1pin_with_name(SOC_GPIO_PIN_CONS_RX,  "Console RX"));
+bi_decl(bi_1pin_with_name(SOC_GPIO_PIN_CONS_TX,  "Console TX"));
+
+bi_decl(bi_1pin_with_name(SOC_GPIO_PIN_SDA,      "I2C SDA"));
+bi_decl(bi_1pin_with_name(SOC_GPIO_PIN_SCL,      "I2C SCL"));
+#endif /* ARDUINO_ARCH_MBED */
 
 // SX127x pin mapping
 lmic_pinmap lmic_pins = {
@@ -91,10 +130,18 @@ const char *RP2040_Device_Model        = "Lego Edition";
 const uint16_t RP2040_Device_Version   = SOFTRF_USB_FW_VERSION;
 
 static union {
+#if !defined(ARDUINO_ARCH_MBED)
   pico_unique_board_id_t RP2040_unique_flash_id;
+#endif /* ARDUINO_ARCH_MBED */
   uint64_t RP2040_chip_id;
 };
 
+#if defined(EXCLUDE_EEPROM)
+eeprom_t eeprom_block;
+settings_t *settings = &eeprom_block.field.settings;
+#endif /* EXCLUDE_EEPROM */
+
+#if !defined(ARDUINO_ARCH_MBED)
 Adafruit_FlashTransport_RP2040 HWFlashTransport;
 Adafruit_SPIFlash QSPIFlash(&HWFlashTransport);
 
@@ -110,6 +157,7 @@ enum {
 static SPIFlash_Device_t possible_devices[] = {
   [W25Q16JV_IQ_INDEX] = W25Q16JV_IQ,
 };
+#endif /* ARDUINO_ARCH_MBED */
 
 static bool RP2040_has_spiflash = false;
 static uint32_t spiflash_id     = 0;
@@ -127,6 +175,7 @@ FatFileSystem fatfs;
 
 StaticJsonBuffer<RP2040_JSON_BUFFER_SIZE> RP2040_jsonBuffer;
 
+#if !defined(ARDUINO_ARCH_MBED)
 // Callback invoked when received READ10 command.
 // Copy disk's data to buffer (up to bufsize) and
 // return number of copied bytes (must be multiple of block size)
@@ -157,16 +206,15 @@ static void RP2040_msc_flush_cb (void)
   // clear file system's cache to force refresh
   fatfs.cacheClear();
 }
+#endif /* ARDUINO_ARCH_MBED */
 
 static void RP2040_setup()
 {
-  bi_decl(bi_program_name(SOFTRF_IDENT));
-  bi_decl(bi_program_description(SOFTRF_DESC));
-  bi_decl(bi_program_version_string(SOFTRF_FIRMWARE_VERSION));
-  bi_decl(bi_program_build_date_string(__DATE__));
-  bi_decl(bi_program_url(SOFTRF_URL));
-
+#if !defined(ARDUINO_ARCH_MBED)
   pico_get_unique_board_id(&RP2040_unique_flash_id);
+#else
+  flash_get_unique_id((uint8_t *)&RP2040_chip_id);
+#endif /* ARDUINO_ARCH_MBED */
 
 #if SOC_GPIO_RADIO_LED_TX != SOC_UNUSED_PIN
   pinMode(SOC_GPIO_RADIO_LED_TX, OUTPUT);
@@ -183,6 +231,7 @@ static void RP2040_setup()
   USBDevice.setDeviceVersion(RP2040_Device_Version);
 #endif /* USE_TINYUSB */
 
+#if !defined(ARDUINO_ARCH_MBED)
   SerialOutput.setRX(SOC_GPIO_PIN_CONS_RX);
   SerialOutput.setTX(SOC_GPIO_PIN_CONS_TX);
   SerialOutput.setFIFOSize(128);
@@ -197,41 +246,61 @@ static void RP2040_setup()
   SPI1.setSCK(SOC_GPIO_PIN_SCK);
   SPI1.setCS(SOC_GPIO_PIN_SS);
 
-  Wire1.setSCL(SOC_GPIO_PIN_SCL);
-  Wire1.setSDA(SOC_GPIO_PIN_SDA);
+  Wire.setSCL(SOC_GPIO_PIN_SCL);
+  Wire.setSDA(SOC_GPIO_PIN_SDA);
+#endif /* ARDUINO_ARCH_MBED */
 
+#if SOC_GPIO_PIN_GNSS_RST != SOC_UNUSED_PIN
   pinMode(SOC_GPIO_PIN_GNSS_RST, INPUT_PULLUP);
+#endif
 
+#if SOC_GPIO_PIN_ANT_RXTX != SOC_UNUSED_PIN
   pinMode(SOC_GPIO_PIN_ANT_RXTX, OUTPUT);
   digitalWrite(SOC_GPIO_PIN_ANT_RXTX, HIGH);
+#endif
 
+#if defined(ARDUINO_RASPBERRY_PI_PICO)
+  RP2040_board = (SoC->getChipId() == 0x766065d9) ? RP2040_WEACT : RP2040_RPIPICO;
+#endif /* ARDUINO_RASPBERRY_PI_PICO */
+
+#if !defined(ARDUINO_ARCH_MBED)
   RP2040_has_spiflash = SPIFlash->begin(possible_devices,
                                         EXTERNAL_FLASH_DEVICE_COUNT);
-  hw_info.storage = RP2040_has_spiflash ? STORAGE_FLASH : STORAGE_NONE;
-
   if (RP2040_has_spiflash) {
     spiflash_id = SPIFlash->getJEDECID();
 
+    uint32_t capacity = spiflash_id & 0xFF;
+    if (capacity >= 0x15) { /* equal or greater than 1UL << 21 (2 MiB) */
+      hw_info.storage = STORAGE_FLASH;
+
 #if defined(USE_TINYUSB)
-    // Set disk vendor id, product id and revision with string up to 8, 16, 4 characters respectively
-    usb_msc.setID(RP2040_Device_Manufacturer, "External Flash", "1.0");
+      // Set disk vendor id, product id and revision
+      // with string up to 8, 16, 4 characters respectively
+      usb_msc.setID(RP2040_Device_Manufacturer, "External Flash", "1.0");
 
-    // Set callback
-    usb_msc.setReadWriteCallback(RP2040_msc_read_cb,
-                                 RP2040_msc_write_cb,
-                                 RP2040_msc_flush_cb);
+      // Set callback
+      usb_msc.setReadWriteCallback(RP2040_msc_read_cb,
+                                   RP2040_msc_write_cb,
+                                   RP2040_msc_flush_cb);
 
-    // Set disk size, block size should be 512 regardless of spi flash page size
-    usb_msc.setCapacity(SPIFlash->size()/512, 512);
+      // Set disk size, block size should be 512 regardless of spi flash page size
+      usb_msc.setCapacity(SPIFlash->size()/512, 512);
 
-    // MSC is ready for read/write
-    usb_msc.setUnitReady(true);
+      // MSC is ready for read/write
+      usb_msc.setUnitReady(true);
 
-    usb_msc.begin();
+      usb_msc.begin();
 #endif /* USE_TINYUSB */
 
-    FATFS_is_mounted = fatfs.begin(SPIFlash);
+      FATFS_is_mounted = fatfs.begin(SPIFlash);
+    }
   }
+#endif /* ARDUINO_ARCH_MBED */
+
+  USBSerial.begin(SERIAL_OUT_BR);
+
+  /* Let host's USB and console drivers to warm-up */
+  delay(2000);
 }
 
 static void RP2040_post_init()
@@ -315,8 +384,9 @@ static unsigned long rx_led_time_marker = 0;
 static void RP2040_loop()
 {
   if (wdt_is_active) {
-//    Watchdog.reset();
-//    watchdog_update();
+#if !defined(ARDUINO_ARCH_MBED)
+    watchdog_update();
+#endif /* ARDUINO_ARCH_MBED */
   }
 
 #if SOC_GPIO_RADIO_LED_TX != SOC_UNUSED_PIN
@@ -359,24 +429,27 @@ static void RP2040_fini(int reason)
 #endif /* USE_TINYUSB */
   }
 
+#if !defined(ARDUINO_ARCH_MBED)
   if (SPIFlash != NULL) SPIFlash->end();
+#endif /* ARDUINO_ARCH_MBED */
 
+#if SOC_GPIO_PIN_ANT_RXTX != SOC_UNUSED_PIN
   pinMode(SOC_GPIO_PIN_ANT_RXTX, INPUT);
+#endif
 
 #if defined(USE_TINYUSB)
   // Disable USB
   USBDevice.detach();
 #endif /* USE_TINYUSB */
 
-//  Watchdog.sleep();
-
-//  sleep_run_from_xosc();
+  sleep_run_from_xosc();
 
 #if SOC_GPIO_PIN_BUTTON != SOC_UNUSED_PIN
-//  sleep_goto_dormant_until_edge_high(SOC_GPIO_PIN_BUTTON);
+  sleep_goto_dormant_until_edge_high(SOC_GPIO_PIN_BUTTON);
+#else
+  datetime_t alarm = {0};
+  sleep_goto_sleep_until(&alarm, NULL);
 #endif /* SOC_GPIO_PIN_BUTTON != SOC_UNUSED_PIN */
-
-  NVIC_SystemReset();
 }
 
 static void RP2040_reset()
@@ -474,7 +547,9 @@ static void RP2040_WiFi_transmit_UDP(int port, byte *buf, size_t size)
 
 static bool RP2040_EEPROM_begin(size_t size)
 {
+#if !defined(EXCLUDE_EEPROM)
   EEPROM.begin(size);
+#endif /* EXCLUDE_EEPROM */
 
   return true;
 }
@@ -563,10 +638,10 @@ static byte RP2040_Display_setup()
   byte rval = DISPLAY_NONE;
 
 #if defined(USE_OLED)
-  Wire1.begin();
+  Wire.begin();
   /* I2C transaction @ SSD1306_OLED_I2C_ADDR is a part of OLED_setup() */
-  Wire1.beginTransmission(SSD1306_OLED_I2C_ADDR + 1);
-  if (Wire1.endTransmission() != 0)
+  Wire.beginTransmission(SSD1306_OLED_I2C_ADDR + 1);
+  if (Wire.endTransmission() != 0)
     rval = OLED_setup();
 #endif /* USE_OLED */
 
@@ -665,15 +740,18 @@ static void RP2040_UATModule_restart()
 
 static void RP2040_WDT_setup()
 {
-//  Watchdog.enable(8000);
-//  watchdog_enable(5000, 1);
+#if !defined(ARDUINO_ARCH_MBED)
+  watchdog_enable(5000, 1);
+#endif /* ARDUINO_ARCH_MBED */
   wdt_is_active = true;
 }
 
 static void RP2040_WDT_fini()
 {
   if (wdt_is_active) {
-//    Watchdog.disable();
+#if !defined(ARDUINO_ARCH_MBED)
+    hw_clear_bits(&watchdog_hw->ctrl, WATCHDOG_CTRL_ENABLE_BITS);
+#endif /* ARDUINO_ARCH_MBED */
     wdt_is_active = false;
   }
 }
@@ -741,6 +819,15 @@ static void RP2040_Button_setup()
 #endif /* SOC_GPIO_PIN_BUTTON != SOC_UNUSED_PIN */
 }
 
+#if defined(USE_BOOTSEL_BUTTON)
+#define BOOTSEL_CLICK_DELAY     200
+#define BOOTSEL_LONGPRESS_DELAY 2000
+
+static unsigned long bootsel_time_marker = 0;
+static bool prev_bootsel_state = false;
+static bool is_bootsel_click = false;
+#endif /* USE_BOOTSEL_BUTTON */
+
 static void RP2040_Button_loop()
 {
 #if SOC_GPIO_PIN_BUTTON != SOC_UNUSED_PIN
@@ -748,6 +835,36 @@ static void RP2040_Button_loop()
     button_1.check();
   }
 #endif /* SOC_GPIO_PIN_BUTTON != SOC_UNUSED_PIN */
+
+#if defined(USE_BOOTSEL_BUTTON)
+  if (BOOTSEL) {
+    if (!prev_bootsel_state) {
+      bootsel_time_marker = millis();
+      prev_bootsel_state = true;
+    } else {
+      if (bootsel_time_marker && !is_bootsel_click &&
+          millis() - bootsel_time_marker > BOOTSEL_CLICK_DELAY) {
+        is_bootsel_click = true;
+      }
+      if (bootsel_time_marker &&
+          millis() - bootsel_time_marker > BOOTSEL_LONGPRESS_DELAY) {
+        shutdown(SOFTRF_SHUTDOWN_BUTTON);
+//      Serial.println(F("This will never be printed."));
+      }
+    }
+  } else {
+    if (prev_bootsel_state) {
+      if (is_bootsel_click) {
+#if defined(USE_OLED)
+        OLED_Next_Page();
+#endif
+        is_bootsel_click = false;
+      }
+      bootsel_time_marker = 0;
+      prev_bootsel_state = false;
+    }
+  }
+#endif /* USE_BOOTSEL_BUTTON */
 }
 
 static void RP2040_Button_fini()
@@ -758,13 +875,19 @@ static void RP2040_Button_fini()
     while (digitalRead(SOC_GPIO_PIN_BUTTON) == HIGH);
   }
 #endif /* SOC_GPIO_PIN_BUTTON != SOC_UNUSED_PIN */
+
+#if defined(USE_BOOTSEL_BUTTON)
+  while (BOOTSEL);
+#endif /* USE_BOOTSEL_BUTTON */
 }
 
 static void RP2040_USB_setup()
 {
+#if !defined(ARDUINO_ARCH_MBED)
   if (USBSerial && USBSerial != Serial) {
-    USBSerial.begin(SERIAL_OUT_BR, SERIAL_OUT_BITS);
+    USBSerial.begin(SERIAL_OUT_BR);
   }
+#endif /* ARDUINO_ARCH_MBED */
 }
 
 #include <api/RingBuffer.h>
@@ -819,9 +942,11 @@ static void RP2040_USB_loop()
 
 static void RP2040_USB_fini()
 {
+#if !defined(ARDUINO_ARCH_MBED)
   if (USBSerial && USBSerial != Serial) {
     USBSerial.end();
   }
+#endif /* ARDUINO_ARCH_MBED */
 }
 
 static int RP2040_USB_available()

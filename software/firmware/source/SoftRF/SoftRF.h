@@ -83,7 +83,8 @@
  * for most of GNSS modules
  * being used in SoftRF project
  */
-#define SERIAL_IN_BR      57600
+//#define SERIAL_IN_BR      9600 /* default */
+#define SERIAL_IN_BR      57600 /* Stratux version */
 #endif
 #if !defined(SERIAL_IN_BITS)
 #define SERIAL_IN_BITS    SERIAL_8N1
@@ -96,7 +97,8 @@
  *
  * Applicable for Standalone Edition. Inherited by most of other SoftRF platforms.
  */
-#define STD_OUT_BR        115200
+//#define STD_OUT_BR        38400 /* default */
+#define STD_OUT_BR        115200 /* Stratux version */
 #define STD_OUT_BITS      SERIAL_8N1
 
 #if !defined(SERIAL_OUT_BR)

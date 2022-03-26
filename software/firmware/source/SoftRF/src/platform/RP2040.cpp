@@ -251,7 +251,7 @@ static void RP2040_setup()
 #endif /* ARDUINO_ARCH_MBED */
 
 #if SOC_GPIO_PIN_GNSS_RST != SOC_UNUSED_PIN
-  pinMode(SOC_GPIO_PIN_GNSS_RST, INPUT_PULLUP);
+  pinMode(SOC_GPIO_PIN_GNSS_RST, INPUT_PULLUP); // RAK5005-O 3V3_S PWR_EN
 #endif
 
 #if SOC_GPIO_PIN_ANT_RXTX != SOC_UNUSED_PIN
@@ -904,6 +904,7 @@ RingBufferN<USB_RX_FIFO_SIZE> USB_RX_FIFO = RingBufferN<USB_RX_FIFO_SIZE>();
 
 static void RP2040_USB_loop()
 {
+#if !defined(USE_TINYUSB)
   uint8_t buf[USBD_CDC_IN_OUT_MAX_SIZE];
   size_t size;
 
@@ -938,6 +939,7 @@ static void RP2040_USB_loop()
       break;
     }
   }
+#endif /* USE_TINYUSB */
 }
 
 static void RP2040_USB_fini()

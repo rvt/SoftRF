@@ -7,6 +7,7 @@
 - [CubeCell](https://github.com/lyusupov/SoftRF/blob/master/software/firmware/binaries/README.md#cubecell) (ASR650x)
 - [nRF52840](https://github.com/lyusupov/SoftRF/blob/master/software/firmware/binaries/README.md#nrf52840)
 - [LPC4320](https://github.com/lyusupov/SoftRF/blob/master/software/firmware/binaries/README.md#lpc4320)
+- [ASR6601](https://github.com/lyusupov/SoftRF/blob/master/software/firmware/binaries/README.md#asr6601)
 - [RP2040](https://github.com/lyusupov/SoftRF/blob/master/software/firmware/binaries/README.md#rp2040)
 
 ## NodeMCU
@@ -112,7 +113,7 @@ Plug the HackRF into USB power while holding down the DFU button (the button clo
 
 ```
 $ dfu-util -D hackrf_one_usb.dfu --reset
-$ hackrf_spiflash -v -w SoftRF-firmware-v1.0-LPC43.bin
+$ hackrf_spiflash -v -w SoftRF-firmware-v1.1-LPC43.bin
 ```
 
 ### Restoring HackRF firmware
@@ -124,6 +125,53 @@ $ dfu-util -D hackrf_one_usb.dfu --reset
 $ hackrf_spiflash -v -w HackRF_factory_firmware.bin
 ```
 
+<br>
+
+## ASR6601
+
+1. Download appropriate version of the SoftRF firmware from [this location](https://github.com/lyusupov/SoftRF/tree/master/software/firmware/binaries/ASR6601) ;
+2. Take a copy of **tremo_loader.py** script from [ASR SDK](https://raw.githubusercontent.com/akarsh98/ASR6601-getting-started-guide/main/SDK/build/scripts/tremo_loader.py) ;
+3. Connect an appropriate USB-Serial adapter to ASR6601 MCU pins as follows:
+
+Adapter|MCU
+---|---
+GND|GND
+3V3|VCC
+TX|GPIO16
+RX|GPIO17
+DTR|GPIO2
+RTS|RESET
+
+4. Plug the USB-Serial adapter into spare USB slot of your PC ;
+5. Use the loader tool to read the serial number of the MCU. This is a safety action to make sure that all the connections are good ;
+
+```
+$ python tremo_loader.py --port /dev/ttyUSB0 read_sn
+Connecting...
+Connected
+The SN is: 0c15458cc5fb3201
+```
+
+6. Write the SoftRF firmware binary into flash memory of the ASR6601.
+
+```
+$ python tremo_loader.py --port /dev/ttyUSB0 flash 0x08000000 SoftRF-firmware-v1.1-ASR66.bin
+Connecting...
+Connected
+('send: ', 512)
+('send: ', 1024)
+('send: ', 1536)
+('send: ', 2048)
+('send: ', 2560)
+('send: ', 3072)
+
+< ... skipped ... >
+
+('send: ', 102400)
+('send: ', 102912)
+('send: ', 103228)
+Download files successfully
+```
 <br>
 
 ## RP2040
@@ -145,6 +193,7 @@ The bootloader is capable to self-program an application firmware into the devic
 
 7. Drag the downloaded firmware file by your pointing device (mouse, trackball,...) , then drop it into **RPI-RP2** disk. Wait until the file transfer is complete.
 
+_The illustration below was made for nRF52840 target, but the 'drag-and-drop' procedure for the RP2040 one is very very similar._
 <br>
 
 <img src="https://github.com/lyusupov/SoftRF/raw/master/documents/images/Badge-2.jpg" height="302" width="800">

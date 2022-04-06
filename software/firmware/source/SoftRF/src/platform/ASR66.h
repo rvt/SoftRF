@@ -23,7 +23,7 @@
 /* Maximum of tracked flying objects is now SoC-specific constant */
 #define MAX_TRACKING_OBJECTS    8
 
-#define DEFAULT_SOFTRF_MODEL    SOFTRF_MODEL_MULTI
+#define DEFAULT_SOFTRF_MODEL    SOFTRF_MODEL_OCTAVE
 
 #define isValidFix()            isValidGNSSFix()
 
@@ -137,6 +137,7 @@ struct rst_info {
 #define EXCLUDE_GNSS_GOKE
 //#define EXCLUDE_GNSS_AT65
 #define EXCLUDE_LOG_GNSS_VERSION
+//#define GNSS_MASTER_ID        0x8c45150c
 
 /* Component                         Cost */
 /* -------------------------------------- */

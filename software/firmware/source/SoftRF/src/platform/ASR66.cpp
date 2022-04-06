@@ -96,7 +96,7 @@ static void ASR66_post_init()
 {
   {
     Serial.println();
-    Serial.println(F("SoftRF Multi Edition Power-on Self Test"));
+    Serial.println(F("SoftRF Octave Edition Power-on Self Test"));
     Serial.println();
     SERIAL_FLUSH();
 
@@ -348,6 +348,11 @@ static void ASR66_SPI_begin()
 #endif
 }
 
+#if defined(GNSS_MASTER_ID) && !defined(EXCLUDE_GNSS_UBLOX)
+extern uint8_t GNSSbuf[], setBR[20];
+extern uint8_t makeUBXCFG(uint8_t, uint8_t, uint8_t, const uint8_t *);
+#endif /* GNSS_MASTER_ID && !EXCLUDE_GNSS_UBLOX */
+
 static void ASR66_swSer_begin(unsigned long baud)
 {
   Serial_GNSS_In.begin(baud);
@@ -355,6 +360,34 @@ static void ASR66_swSer_begin(unsigned long baud)
   Serial_GNSS_Out.begin(baud);
   iomux(SOC_GPIO_PIN_GNSS_TX, 2); /* RX -> TX */
   iomux(SOC_GPIO_PIN_UART3_RX,2); /* TX -> RX */
+
+#if defined(GNSS_MASTER_ID)
+  if (SoC->getChipId() == GNSS_MASTER_ID) {
+
+#if !defined(EXCLUDE_GNSS_MTK) && (STD_OUT_BR == 38400)
+    Serial_GNSS_Out.write("$PMTK251,38400*27\r\n");
+    GNSS_FLUSH(); delay(250);
+#endif /* EXCLUDE_GNSS_MTK */
+
+#if !defined(EXCLUDE_GNSS_UBLOX)
+    unsigned int baudrate = STD_OUT_BR;
+
+    setBR[ 8] = (baudrate      ) & 0xFF;
+    setBR[ 9] = (baudrate >>  8) & 0xFF;
+    setBR[10] = (baudrate >> 16) & 0xFF;
+
+    uint8_t msglen = makeUBXCFG(0x06, 0x00, sizeof(setBR), setBR);
+    Serial_GNSS_Out.write(GNSSbuf, msglen);
+    GNSS_FLUSH(); delay(250);
+#endif /* EXCLUDE_GNSS_UBLOX */
+
+    Serial_GNSS_In.updateBaudRate(STD_OUT_BR);
+
+    Serial_GNSS_Out.updateBaudRate(STD_OUT_BR);
+    iomux(SOC_GPIO_PIN_GNSS_TX, 2); /* RX -> TX */
+    iomux(SOC_GPIO_PIN_UART3_RX,2); /* TX -> RX */
+  }
+#endif /* GNSS_MASTER_ID */
 }
 
 static void ASR66_swSer_enableRx(boolean arg)
@@ -399,13 +432,13 @@ static float ASR66_Battery_param(uint8_t param)
   switch (param)
   {
   case BATTERY_PARAM_THRESHOLD:
-    rval = hw_info.model == SOFTRF_MODEL_MULTI ? BATTERY_THRESHOLD_LIPO   :
-                                                BATTERY_THRESHOLD_NIMHX2;
+    rval = hw_info.model == SOFTRF_MODEL_OCTAVE ? BATTERY_THRESHOLD_LIPO  :
+                                                  BATTERY_THRESHOLD_NIMHX2;
     break;
 
   case BATTERY_PARAM_CUTOFF:
-    rval = hw_info.model == SOFTRF_MODEL_MULTI ? BATTERY_CUTOFF_LIPO   :
-                                                BATTERY_CUTOFF_NIMHX2;
+    rval = hw_info.model == SOFTRF_MODEL_OCTAVE ? BATTERY_CUTOFF_LIPO  :
+                                                  BATTERY_CUTOFF_NIMHX2;
     break;
 
   case BATTERY_PARAM_CHARGE:

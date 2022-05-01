@@ -27,11 +27,13 @@
 #define DEFAULT_SOFTRF_MODEL  SOFTRF_MODEL_ES
 
 #define USBSerial             Serial
-#define SerialOutput          Serial
-#define Serial_GNSS_In        Serial
+#define SerialOutput          Serial1
+#define Serial_GNSS_In        Serial4
 #define Serial_GNSS_Out       Serial_GNSS_In
 
 #define isValidFix()          isValidGNSSFix()
+
+#define LED_STATE_ON          HIGH // State when LED is litted
 
 enum rst_reason {
   REASON_DEFAULT_RST      = 0,  /* normal startup by power on */
@@ -47,7 +49,46 @@ struct rst_info {
   uint32_t reason;
 };
 
-#define SOC_GPIO_PIN_GNSS_PPS SOC_UNUSED_PIN
+typedef enum {
+        USB_DATA_GDL90,
+        USB_DATA_D1090,
+        USB_DATA_NMEA,
+} usb_data_t;
+
+#ifdef __cplusplus
+#include <Uart.h>
+
+#if defined(static_assert)
+#undef static_assert
+#endif
+
+extern Uart Serial1;
+extern Uart Serial4;
+
+extern "C" bool dfu_button_state(void);
+
+#endif /* __cplusplus */
+
+extern usb_data_t usb_data_type;
+
+/* Peripherals */
+#define SOC_GPIO_PIN_CONS_RX  (P2_1)
+#define SOC_GPIO_PIN_CONS_TX  (P2_0)
+
+#define SOC_GPIO_PIN_GNSS_RX  (P2_4)
+#define SOC_GPIO_PIN_GNSS_TX  (P2_3)
+#define SOC_GPIO_PIN_GNSS_PPS SOC_UNUSED_PIN /* P2_13 */
+
+/* I2C */
+#define SOC_GPIO_PIN_SDA      SOC_UNUSED_PIN
+#define SOC_GPIO_PIN_SCL      SOC_UNUSED_PIN
+
+#define SOC_GPIO_PIN_BATTERY  SOC_UNUSED_PIN
+#define SOC_GPIO_PIN_BUTTON   (P2_8) /* active HIGH */
+
+#define SOC_GPIO_RADIO_LED_RX (P4_2)  /* Yellow */
+#define SOC_GPIO_RADIO_LED_TX (P6_12) /* Red */
+#define SOC_GPIO_LED_USB      (P4_1)  /* Green */
 
 #define EXCLUDE_WIFI
 #define EXCLUDE_LED_RING
@@ -64,11 +105,12 @@ struct rst_info {
 #define EXCLUDE_TEST_MODE
 #define EXCLUDE_TRAFFIC_FILTER_EXTENSION
 
-#define EXCLUDE_GNSS_UBLOX
+//#define EXCLUDE_GNSS_UBLOX
 #define EXCLUDE_GNSS_SONY
-#define EXCLUDE_GNSS_MTK
+//#define EXCLUDE_GNSS_MTK
 #define EXCLUDE_GNSS_GOKE
 #define EXCLUDE_GNSS_AT65
+//#define EXCLUDE_LOG_GNSS_VERSION
 
 #define EXCLUDE_BMP180
 #define EXCLUDE_BMP280

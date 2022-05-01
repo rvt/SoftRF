@@ -139,8 +139,10 @@ GND|GND
 3V3|VCC
 TX|GPIO16
 RX|GPIO17
-DTR|GPIO2
+DTR&nbsp;<sup>1</sup>|GPIO2
 RTS|RESET
+
+<sup>1</sup> - certain USB-Serial adapters may require to **invert DTR** signal either in hardware or in the Python script.<br>
 
 4. Plug the USB-Serial adapter into spare USB slot of your PC ;
 5. Use the loader tool to read the serial number of the MCU. This is a safety action to make sure that all the connections are good ;
@@ -155,7 +157,7 @@ The SN is: 0c15458cc5fb3201
 6. Write the SoftRF firmware binary into flash memory of the ASR6601.
 
 ```
-$ python tremo_loader.py --port /dev/ttyUSB0 flash 0x08000000 SoftRF-firmware-v1.1-ASR66.bin
+$ python tremo_loader.py --port /dev/ttyUSB0 flash 0x08000000 SoftRF-firmware-v1.1-ASR6601.bin
 Connecting...
 Connected
 ('send: ', 512)

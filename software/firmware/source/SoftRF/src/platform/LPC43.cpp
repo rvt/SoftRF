@@ -36,11 +36,18 @@
 #include "src/driver/WiFi.h"
 
 #include "Adafruit_USBD_Device.h"
+#include "Uart.h"
+
+Uart Serial1(LIBGREAT_UART0);
+Uart Serial4(LIBGREAT_UART3);
 
 eeprom_t eeprom_block;
 settings_t *settings = &eeprom_block.field.settings;
 
 ufo_t ThisAircraft;
+
+uint32_t tx_packets_counter = 0;
+uint32_t rx_packets_counter = 0;
 
 char UDPpacketBuffer[UDP_PACKET_BUFSIZE]; // buffer to hold incoming and outgoing packets
 
@@ -67,6 +74,12 @@ const char *LPC43_Device_Manufacturer = SOFTRF_IDENT;
 const char *LPC43_Device_Model = "ES Edition";
 const uint16_t LPC43_Device_Version = SOFTRF_USB_FW_VERSION;
 
+#if defined(USE_PORTAPACK)
+extern "C" const void* portapack(void);
+#endif /* USE_PORTAPACK */
+
+usb_data_t usb_data_type = USB_DATA_GDL90;
+
 void LPC43_setup(void)
 {
   eeprom_block.field.magic                  = SOFTRF_EEPROM_MAGIC;
@@ -85,8 +98,8 @@ void LPC43_setup(void)
   eeprom_block.field.settings.nmea_p        = false;
   eeprom_block.field.settings.nmea_l        = true;
   eeprom_block.field.settings.nmea_s        = true;
-  eeprom_block.field.settings.nmea_out      = NMEA_UART;
-  eeprom_block.field.settings.gdl90         = GDL90_OFF;
+  eeprom_block.field.settings.nmea_out      = NMEA_OFF;
+  eeprom_block.field.settings.gdl90         = GDL90_USB;
   eeprom_block.field.settings.d1090         = D1090_OFF;
   eeprom_block.field.settings.json          = JSON_OFF;
   eeprom_block.field.settings.stealth       = false;
@@ -98,16 +111,105 @@ void LPC43_setup(void)
   eeprom_block.field.settings.igc_key[2]    = 0;
   eeprom_block.field.settings.igc_key[3]    = 0;
 
+
+  SerialOutput.begin(SERIAL_OUT_BR, SERIAL_OUT_BITS);
+
+#if 0
+  SerialOutput.println();
+  SerialOutput.print(F(SOFTRF_IDENT "-"));
+  SerialOutput.print(SoC->name);
+  SerialOutput.print(F(" FW.REV: " SOFTRF_FIRMWARE_VERSION " DEV.ID: "));
+  SerialOutput.println(String(SoC->getChipId(), HEX));
+  SerialOutput.println(F("Copyright (C) 2015-2022 Linar Yusupov. All rights reserved."));
+  SerialOutput.println();
+#endif
 }
 
 static void LPC43_post_init()
 {
+  Serial.println();
+  Serial.println(F("SoftRF ES Edition Power-on Self Test"));
+  Serial.println();
+  Serial.flush();
 
+  Serial.print(F("GNSS    : "));
+  Serial.println(hw_info.gnss    != GNSS_MODULE_NONE  ? F("PASS") : F("N/A"));
+  Serial.print(F("DISPLAY : "));
+  Serial.println(hw_info.display != DISPLAY_NONE      ? F("PASS") : F("N/A"));
+
+  Serial.println();
+  Serial.println(F("Power-on Self Test is complete."));
+  Serial.println();
+  Serial.flush();
+
+  Serial.println(F("Data output device(s):"));
+
+  Serial.print(F("NMEA   - "));
+  switch (settings->nmea_out)
+  {
+    case NMEA_UART       :  Serial.println(F("UART"));    break;
+    case NMEA_USB        :  Serial.println(F("USB CDC")); break;
+    case NMEA_OFF        :
+    default              :  Serial.println(F("NULL"));    break;
+  }
+
+  Serial.print(F("GDL90  - "));
+  switch (settings->gdl90)
+  {
+    case GDL90_UART      :  Serial.println(F("UART"));    break;
+    case GDL90_USB       :  Serial.println(F("USB CDC")); break;
+    case GDL90_OFF       :
+    default              :  Serial.println(F("NULL"));    break;
+  }
+
+  Serial.print(F("D1090  - "));
+  switch (settings->d1090)
+  {
+    case D1090_UART      :  Serial.println(F("UART"));    break;
+    case D1090_USB       :  Serial.println(F("USB CDC")); break;
+    case D1090_OFF       :
+    default              :  Serial.println(F("NULL"));    break;
+  }
+
+  Serial.println();
+  Serial.flush();
 }
+
+static uint32_t prev_rx_packets_counter = 0;
+static unsigned long rx_led_time_marker = 0;
+static bool rx_led_state = false;
+
+#define LED_BLINK_TIME 100
+
+typedef enum {
+        LED1 = 0,
+        LED2 = 1,
+        LED3 = 2,
+        LED4 = 3,
+} led_t;
+
+extern "C" void led_on (const led_t led);
+extern "C" void led_off(const led_t led);
+extern "C" void led_toggle(const led_t led);
 
 static void LPC43_loop()
 {
-
+#if SOC_GPIO_RADIO_LED_RX != SOC_UNUSED_PIN
+  if (!rx_led_state) {
+    if (rx_packets_counter != prev_rx_packets_counter) {
+      led_on(LED2);
+      rx_led_state = true;
+      prev_rx_packets_counter = rx_packets_counter;
+      rx_led_time_marker = millis();
+    }
+  } else {
+    if (millis() - rx_led_time_marker > LED_BLINK_TIME) {
+      led_off(LED2);
+      rx_led_state = false;
+      prev_rx_packets_counter = rx_packets_counter;
+    }
+  }
+#endif /* SOC_GPIO_RADIO_LED_RX */
 }
 
 static void LPC43_fini(int reason)
@@ -149,12 +251,16 @@ static void LPC43_SPI_begin()
 
 static void LPC43_swSer_begin(unsigned long baud)
 {
-
+  Serial_GNSS_In.begin(baud);
 }
 
 static byte LPC43_Display_setup()
 {
   byte rval = DISPLAY_NONE;
+
+#if defined(USE_PORTAPACK)
+  rval = portapack() ? DISPLAY_TFT_PORTAPACK : rval;
+#endif /* USE_PORTAPACK */
 
   return rval;
 }
@@ -231,14 +337,86 @@ static void LPC43_WDT_fini()
   /* TBD */
 }
 
+#define DFU_CLICK_DELAY     200
+#define DFU_LONGPRESS_DELAY 2000
+
+static unsigned long dfu_time_marker = 0;
+static bool prev_dfu_state = false;
+static bool is_dfu_click = false;
+static usb_data_t prev_usb_data_type = USB_DATA_D1090;
+
+void On_Button_Clock()
+{
+  led_toggle(LED3);
+
+  if (usb_data_type != USB_DATA_D1090) {
+    prev_usb_data_type = usb_data_type;
+    usb_data_type = USB_DATA_D1090;
+
+    if (prev_usb_data_type == USB_DATA_NMEA) {
+      settings->nmea_out = NMEA_OFF;
+    } else if (prev_usb_data_type == USB_DATA_GDL90) {
+      settings->gdl90    = GDL90_OFF;
+    }
+
+    settings->d1090 = D1090_USB;
+
+  } else {
+
+    usb_data_type = prev_usb_data_type;
+    prev_usb_data_type = USB_DATA_D1090;
+
+    settings->d1090 = D1090_OFF;
+
+    if (usb_data_type == USB_DATA_NMEA) {
+      settings->nmea_out = NMEA_USB;
+    } else if (usb_data_type == USB_DATA_GDL90) {
+      settings->gdl90    = GDL90_USB;
+    }
+  }
+}
+
+void On_Button_LongPress()
+{
+
+}
+
 static void LPC43_Button_setup()
 {
-  /* TODO */
+
 }
 
 static void LPC43_Button_loop()
 {
-  /* TODO */
+  if (dfu_button_state()) {
+    if (!prev_dfu_state) {
+      dfu_time_marker = millis();
+      prev_dfu_state = true;
+    } else {
+      if (dfu_time_marker && !is_dfu_click &&
+          millis() - dfu_time_marker > DFU_CLICK_DELAY) {
+        is_dfu_click = true;
+      }
+      if (dfu_time_marker &&
+          millis() - dfu_time_marker > DFU_LONGPRESS_DELAY) {
+
+        On_Button_LongPress();
+
+//      Serial.println(F("This will never be printed."));
+      }
+    }
+  } else {
+    if (prev_dfu_state) {
+      if (is_dfu_click) {
+
+        On_Button_Clock();
+
+        is_dfu_click = false;
+      }
+      dfu_time_marker = 0;
+      prev_dfu_state = false;
+    }
+  }
 }
 
 static void LPC43_Button_fini()
@@ -260,9 +438,20 @@ static void LPC43_USB_setup()
   }
 }
 
+static bool usb_led_state = false;
+
 static void LPC43_USB_loop()
 {
   USBDevice.task();
+  Serial.flush();
+
+  if (USBSerial && !usb_led_state) {
+    led_on(LED1);
+    usb_led_state = true;
+  } else if (!USBSerial && usb_led_state) {
+    led_off(LED1);
+    usb_led_state = false;
+  }
 }
 
 static void LPC43_USB_fini()
@@ -373,6 +562,11 @@ void setup_CPP(void)
 
   Serial.begin(SERIAL_OUT_BR);
 
+  unsigned long ms = millis();
+  while (millis() - ms < 3000) {
+    if (Serial) { delay(1000); break; } else if (SoC->USB_ops) SoC->USB_ops->loop();
+  }
+
   Serial.println();
   Serial.print(F(SOFTRF_IDENT "-"));
   Serial.print(SoC->name);
@@ -388,12 +582,27 @@ void setup_CPP(void)
   ThisAircraft.no_track = settings->no_track;
 
   hw_info.gnss = GNSS_setup();
+
+  if (hw_info.gnss != GNSS_MODULE_NONE) {
+    settings->nmea_out = NMEA_USB;
+    settings->gdl90    = GDL90_OFF;
+
+    usb_data_type = USB_DATA_NMEA;
+  }
+
+  hw_info.display = SoC->Display_setup();
+
   Traffic_setup();
+  NMEA_setup();
+  Serial.flush();
+
+  SoC->post_init();
+
+  SoC->WDT_setup();
 }
 
 void main_loop_CPP(void)
 {
-
   GNSS_loop();
 
   ThisAircraft.timestamp = now();
@@ -406,9 +615,6 @@ void main_loop_CPP(void)
     ThisAircraft.hdop = (uint16_t) gnss.hdop.value();
     ThisAircraft.geoid_separation = gnss.separation.meters();
   }
-
-//  success = RF_Receive();
-//  if (success && isValidFix()) ParseData();
 
   if (isValidFix()) {
     Traffic_loop();
@@ -447,72 +653,87 @@ void main_loop_CPP(void)
 }
 
 extern mode_s_t state;
+#include <malloc.h>
+struct mallinfo mi;
 
 void once_per_second_task_CPP(void)
 {
-  struct mode_s_aircraft *a = state.aircrafts;
+  struct mode_s_aircraft *a;
+  int i = 0;
+
+#if 0
+  a = state.aircrafts;
 
   while (a) {
-    if (a->even_cprtime && a->odd_cprtime &&
-        abs((long) (a->even_cprtime - a->odd_cprtime)) <= MODE_S_INTERACTIVE_TTL * 1000 ) {
-      if (es1090_decode(a, &ThisAircraft, &fo)) {
-         memset(fo.raw, 0, sizeof(fo.raw));
-
-     int i;
-
-      Traffic_Update(&fo);
-
-      for (i=0; i < MAX_TRACKING_OBJECTS; i++) {
-        if (Container[i].addr == fo.addr) {
-          uint8_t alert_bak = Container[i].alert;
-          Container[i] = fo;
-          Container[i].alert = alert_bak;
-          return;
-        }
-      }
-
-      int max_dist_ndx = 0;
-      int min_level_ndx = 0;
-
-      for (i=0; i < MAX_TRACKING_OBJECTS; i++) {
-        if (now() - Container[i].timestamp > ENTRY_EXPIRATION_TIME) {
-          Container[i] = fo;
-          return;
-        }
-#if !defined(EXCLUDE_TRAFFIC_FILTER_EXTENSION)
-        if  (Container[i].distance > Container[max_dist_ndx].distance)  {
-          max_dist_ndx = i;
-        }
-        if  (Container[i].alarm_level < Container[min_level_ndx].alarm_level)  {
-          min_level_ndx = i;
-        }
-#endif /* EXCLUDE_TRAFFIC_FILTER_EXTENSION */
-      }
-#if !defined(EXCLUDE_TRAFFIC_FILTER_EXTENSION)
-      if (fo.alarm_level > Container[min_level_ndx].alarm_level) {
-        Container[min_level_ndx] = fo;
-        return;
-      }
-
-      if (fo.distance    <  Container[max_dist_ndx].distance &&
-          fo.alarm_level >= Container[max_dist_ndx].alarm_level) {
-        Container[max_dist_ndx] = fo;
-        return;
-      }
-#endif /* EXCLUDE_TRAFFIC_FILTER_EXTENSION */
-
-
-      }
-    }
+    i++;
     a = a->next;
   }
 
-////    NMEA_Export();
-//    GDL90_Export();
+  mi = mallinfo();
+  SerialOutput.print(millis() / 1000); SerialOutput.write(' ');
+  SerialOutput.print(i); SerialOutput.write(' ');
+  SerialOutput.println(mi.fordblks);
+#endif
 
-  if (isValidFix()) {
-//    D1090_Export();
+  for (a = state.aircrafts; a; a = a->next) {
+    if (a->even_cprtime && a->odd_cprtime &&
+        abs((long) (a->even_cprtime - a->odd_cprtime)) <= MODE_S_INTERACTIVE_TTL * 1000 ) {
+      if (es1090_decode(a, &ThisAircraft, &fo)) {
+        memset(fo.raw, 0, sizeof(fo.raw));
+
+        Traffic_Update(&fo);
+
+        for (i=0; i < MAX_TRACKING_OBJECTS; i++) {
+          if (Container[i].addr == fo.addr) {
+            uint8_t alert_bak = Container[i].alert;
+            Container[i] = fo;
+            Container[i].alert = alert_bak;
+            break;
+          }
+        }
+        if (i < MAX_TRACKING_OBJECTS) continue;
+
+        int max_dist_ndx = 0;
+        int min_level_ndx = 0;
+
+        for (i=0; i < MAX_TRACKING_OBJECTS; i++) {
+          if (now() - Container[i].timestamp > ENTRY_EXPIRATION_TIME) {
+            Container[i] = fo;
+            break;
+          }
+#if !defined(EXCLUDE_TRAFFIC_FILTER_EXTENSION)
+          if (Container[i].distance > Container[max_dist_ndx].distance) {
+            max_dist_ndx = i;
+          }
+          if (Container[i].alarm_level < Container[min_level_ndx].alarm_level) {
+            min_level_ndx = i;
+          }
+#endif /* EXCLUDE_TRAFFIC_FILTER_EXTENSION */
+        }
+        if (i < MAX_TRACKING_OBJECTS) continue;
+
+#if !defined(EXCLUDE_TRAFFIC_FILTER_EXTENSION)
+        if (fo.alarm_level > Container[min_level_ndx].alarm_level) {
+          Container[min_level_ndx] = fo;
+          continue;
+        }
+
+        if (fo.distance    <  Container[max_dist_ndx].distance &&
+            fo.alarm_level >= Container[max_dist_ndx].alarm_level) {
+          Container[max_dist_ndx] = fo;
+          continue;
+        }
+#endif /* EXCLUDE_TRAFFIC_FILTER_EXTENSION */
+      }
+    }
   }
+
+  NMEA_Export();
+  GDL90_Export();
+
+//  if (isValidFix()) {
+//    D1090_Export();
+//  }
 
   if (isValidFix()) {
     Traffic_loop();

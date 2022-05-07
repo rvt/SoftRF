@@ -25,6 +25,7 @@
 #define MAX_TRACKING_OBJECTS  8
 
 #define DEFAULT_SOFTRF_MODEL  SOFTRF_MODEL_ES
+#define PLAT_LPC43_NAME       "LPC43"
 
 #define USBSerial             Serial
 #define SerialOutput          Serial1
@@ -33,7 +34,11 @@
 
 #define isValidFix()          isValidGNSSFix()
 
+#define EEPROM_commit()       EEPROM.commit()
+
 #define LED_STATE_ON          HIGH // State when LED is litted
+
+#define UDP_PACKET_BUFSIZE    128  // GDL90 buffer
 
 enum rst_reason {
   REASON_DEFAULT_RST      = 0,  /* normal startup by power on */
@@ -80,8 +85,8 @@ extern usb_data_t usb_data_type;
 #define SOC_GPIO_PIN_GNSS_PPS SOC_UNUSED_PIN /* P2_13 */
 
 /* I2C */
-#define SOC_GPIO_PIN_SDA      SOC_UNUSED_PIN
-#define SOC_GPIO_PIN_SCL      SOC_UNUSED_PIN
+#define SOC_GPIO_PIN_SDA      (I2C0_SDA)
+#define SOC_GPIO_PIN_SCL      (I2C0_SCL)
 
 #define SOC_GPIO_PIN_BATTERY  SOC_UNUSED_PIN
 #define SOC_GPIO_PIN_BUTTON   (P2_8) /* active HIGH */
@@ -93,7 +98,7 @@ extern usb_data_t usb_data_type;
 #define EXCLUDE_WIFI
 #define EXCLUDE_LED_RING
 #define EXCLUDE_SOUND
-#define EXCLUDE_EEPROM
+//#define EXCLUDE_EEPROM
 #define EXCLUDE_LK8EX1
 #define EXCLUDE_EGM96
 #define EXCLUDE_CC13XX
@@ -103,6 +108,7 @@ extern usb_data_t usb_data_type;
 #define EXCLUDE_OGLEP3
 #define EXCLUDE_MAVLINK
 #define EXCLUDE_TEST_MODE
+#define EXCLUDE_WATCHOUT_MODE
 #define EXCLUDE_TRAFFIC_FILTER_EXTENSION
 
 //#define EXCLUDE_GNSS_UBLOX
@@ -113,8 +119,28 @@ extern usb_data_t usb_data_type;
 //#define EXCLUDE_LOG_GNSS_VERSION
 
 #define EXCLUDE_BMP180
-#define EXCLUDE_BMP280
+//#define EXCLUDE_BMP280
 #define EXCLUDE_MPL3115A2
+
+#define USE_NMEA_CFG
+
+#define USE_OLED
+#define EXCLUDE_OLED_049
+#define EXCLUDE_OLED_BARO_PAGE
+
+/* trade performance for flash memory usage (-5 Kb) */
+#define cosf(x)               cos  ((double) (x))
+#define sinf(x)               sin  ((double) (x))
+#define sqrtf(x)              sqrt ((double) (x))
+#define atan2f(y,x)           atan2((double) (y), (double) (x))
+
+#if defined(USE_OLED)
+#define U8X8_OLED_I2C_BUS_TYPE  U8X8_SSD1306_128X64_NONAME_HW_I2C
+
+extern bool LPC43_OLED_probe_func();
+
+#define plat_oled_probe_func LPC43_OLED_probe_func
+#endif /* USE_OLED */
 
 #endif /* PLATFORM_LPC43_H */
 #endif /* HACKRF_ONE */

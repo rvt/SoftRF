@@ -33,23 +33,21 @@
 #include <src/TrafficHelper.h>
 #include "src/protocol/data/JSON.h"
 #include "src/driver/Bluetooth.h"
-#include "src/driver/WiFi.h"
+#include "src/driver/OLED.h"
 
 #include "Adafruit_USBD_Device.h"
 #include "Uart.h"
 
-Uart Serial1(LIBGREAT_UART0);
-Uart Serial4(LIBGREAT_UART3);
-
-eeprom_t eeprom_block;
-settings_t *settings = &eeprom_block.field.settings;
+Uart Serial1(LPC43_UART0);
+Uart Serial4(LPC43_UART3);
 
 ufo_t ThisAircraft;
 
 uint32_t tx_packets_counter = 0;
 uint32_t rx_packets_counter = 0;
 
-char UDPpacketBuffer[UDP_PACKET_BUFSIZE]; // buffer to hold incoming and outgoing packets
+char UDPpacketBuffer[UDP_PACKET_BUFSIZE]; // buffer to hold GDL90 frames
+void RF_Shutdown() { }   // Dummy definition to satisfy build sequence
 
 static struct rst_info reset_info = {
   .reason = REASON_DEFAULT_RST,
@@ -59,7 +57,7 @@ hardware_info_t hw_info = {
   .model    = DEFAULT_SOFTRF_MODEL,
   .revision = 0,
   .soc      = SOC_NONE,
-  .rf       = RF_IC_NONE,
+  .rf       = RF_IC_MAX2837,
   .gnss     = GNSS_MODULE_NONE,
   .baro     = BARO_MODULE_NONE,
   .display  = DISPLAY_NONE,
@@ -71,69 +69,54 @@ hardware_info_t hw_info = {
 const uint16_t LPC43_Vendor_Id = 0x1d50; /* OpenMoko, Inc. */
 const uint16_t LPC43_Device_Id = 0x6089; /* HackRF One */
 const char *LPC43_Device_Manufacturer = SOFTRF_IDENT;
-const char *LPC43_Device_Model = "ES Edition";
-const uint16_t LPC43_Device_Version = SOFTRF_USB_FW_VERSION;
+const char *LPC43_Device_Model        = "ES Edition";
+const uint16_t LPC43_Device_Version   = SOFTRF_USB_FW_VERSION;
+
+const char *LPC43_boot_str1 = SOFTRF_IDENT "-" PLAT_LPC43_NAME
+                              " FW.REV: " SOFTRF_FIRMWARE_VERSION " DEV.ID: ";
+const char *LPC43_boot_str2 = "Copyright (C) 2015-2022 Linar Yusupov. ";
+const char *LPC43_boot_str3 = "All rights reserved";
 
 #if defined(USE_PORTAPACK)
 extern "C" const void* portapack(void);
 #endif /* USE_PORTAPACK */
 
-usb_data_t usb_data_type = USB_DATA_GDL90;
+static bool wdt_is_active = false;
+
+#if defined(USE_OLED)
+const char *Protocol_ID[] = {
+  [RF_PROTOCOL_LEGACY]    = "LEG",
+  [RF_PROTOCOL_OGNTP]     = "OGN",
+  [RF_PROTOCOL_P3I]       = "P3I",
+  [RF_PROTOCOL_ADSB_1090] = "ADS",
+  [RF_PROTOCOL_ADSB_UAT]  = "UAT",
+  [RF_PROTOCOL_FANET]     = "FAN"
+};
+#endif /* USE_OLED */
 
 void LPC43_setup(void)
 {
-  eeprom_block.field.magic                  = SOFTRF_EEPROM_MAGIC;
-  eeprom_block.field.version                = SOFTRF_EEPROM_VERSION;
-  eeprom_block.field.settings.mode          = SOFTRF_MODE_NORMAL;
-  eeprom_block.field.settings.rf_protocol   = RF_PROTOCOL_ADSB_1090;
-  eeprom_block.field.settings.band          = RF_BAND_EU;
-  eeprom_block.field.settings.aircraft_type = AIRCRAFT_TYPE_GLIDER;
-  eeprom_block.field.settings.txpower       = RF_TX_POWER_OFF;
-  eeprom_block.field.settings.volume        = BUZZER_OFF;
-  eeprom_block.field.settings.pointer       = DIRECTION_NORTH_UP;
-  eeprom_block.field.settings.bluetooth     = BLUETOOTH_OFF;
-  eeprom_block.field.settings.alarm         = TRAFFIC_ALARM_DISTANCE;
-
-  eeprom_block.field.settings.nmea_g        = true;
-  eeprom_block.field.settings.nmea_p        = false;
-  eeprom_block.field.settings.nmea_l        = true;
-  eeprom_block.field.settings.nmea_s        = true;
-  eeprom_block.field.settings.nmea_out      = NMEA_OFF;
-  eeprom_block.field.settings.gdl90         = GDL90_USB;
-  eeprom_block.field.settings.d1090         = D1090_OFF;
-  eeprom_block.field.settings.json          = JSON_OFF;
-  eeprom_block.field.settings.stealth       = false;
-  eeprom_block.field.settings.no_track      = false;
-  eeprom_block.field.settings.power_save    = POWER_SAVE_NONE;
-  eeprom_block.field.settings.freq_corr     = 0;
-  eeprom_block.field.settings.igc_key[0]    = 0;
-  eeprom_block.field.settings.igc_key[1]    = 0;
-  eeprom_block.field.settings.igc_key[2]    = 0;
-  eeprom_block.field.settings.igc_key[3]    = 0;
-
-
   SerialOutput.begin(SERIAL_OUT_BR, SERIAL_OUT_BITS);
 
-#if 0
   SerialOutput.println();
-  SerialOutput.print(F(SOFTRF_IDENT "-"));
-  SerialOutput.print(SoC->name);
-  SerialOutput.print(F(" FW.REV: " SOFTRF_FIRMWARE_VERSION " DEV.ID: "));
+  SerialOutput.print(LPC43_boot_str1);
   SerialOutput.println(String(SoC->getChipId(), HEX));
-  SerialOutput.println(F("Copyright (C) 2015-2022 Linar Yusupov. All rights reserved."));
+  SerialOutput.print(LPC43_boot_str2); SerialOutput.println(LPC43_boot_str3);
   SerialOutput.println();
-#endif
 }
 
 static void LPC43_post_init()
 {
   Serial.println();
-  Serial.println(F("SoftRF ES Edition Power-on Self Test"));
+  Serial.print(LPC43_Device_Manufacturer); Serial.print(' ');
+  Serial.print(LPC43_Device_Model); Serial.println(" Power-on Self Test");
   Serial.println();
   Serial.flush();
 
   Serial.print(F("GNSS    : "));
   Serial.println(hw_info.gnss    != GNSS_MODULE_NONE  ? F("PASS") : F("N/A"));
+  Serial.print(F("BARO    : "));
+  Serial.println(hw_info.baro    != BARO_MODULE_NONE  ? F("PASS") : F("N/A"));
   Serial.print(F("DISPLAY : "));
   Serial.println(hw_info.display != DISPLAY_NONE      ? F("PASS") : F("N/A"));
 
@@ -173,6 +156,10 @@ static void LPC43_post_init()
 
   Serial.println();
   Serial.flush();
+
+#if defined(USE_OLED)
+  OLED_info1();
+#endif /* USE_OLED */
 }
 
 static uint32_t prev_rx_packets_counter = 0;
@@ -185,7 +172,6 @@ typedef enum {
         LED1 = 0,
         LED2 = 1,
         LED3 = 2,
-        LED4 = 3,
 } led_t;
 
 extern "C" void led_on (const led_t led);
@@ -194,6 +180,10 @@ extern "C" void led_toggle(const led_t led);
 
 static void LPC43_loop()
 {
+  if (wdt_is_active) {
+    platform_watchdog_feed();
+  }
+
 #if SOC_GPIO_RADIO_LED_RX != SOC_UNUSED_PIN
   if (!rx_led_state) {
     if (rx_packets_counter != prev_rx_packets_counter) {
@@ -219,7 +209,7 @@ static void LPC43_fini(int reason)
 
 static void LPC43_reset()
 {
-
+  system_reset(RESET_REASON_SOFT_RESET, true);
 }
 
 extern uint32_t LPC43_Device_ID;
@@ -234,6 +224,19 @@ static void* LPC43_getResetInfoPtr()
   return (void *) &reset_info;
 }
 
+static String LPC43_getResetReason()
+{
+  return (String) system_get_reset_reason_string();
+}
+
+extern "C" void * _sbrk   (int);
+
+static uint32_t LPC43_getFreeHeap()
+{
+  char top;
+  return &top - reinterpret_cast<char*>(_sbrk(0));
+}
+
 static long LPC43_random(long howsmall, long howBig)
 {
   return howsmall + random() % (howBig - howsmall);
@@ -242,6 +245,43 @@ static long LPC43_random(long howsmall, long howBig)
 static void LPC43_WiFi_transmit_UDP(int port, byte *buf, size_t size)
 {
 
+}
+
+static bool LPC43_EEPROM_begin(size_t size)
+{
+  EEPROM.begin(size);
+
+  return true;
+}
+
+static void LPC43_EEPROM_extension(int cmd)
+{
+  if (cmd == EEPROM_EXT_LOAD) {
+    if (settings->mode != SOFTRF_MODE_NORMAL
+#if !defined(EXCLUDE_TEST_MODE)
+        &&
+        settings->mode != SOFTRF_MODE_TXRX_TEST
+#endif /* EXCLUDE_TEST_MODE */
+        ) {
+      settings->mode = SOFTRF_MODE_NORMAL;
+    }
+
+    if (settings->nmea_out == NMEA_BLUETOOTH ||
+        settings->nmea_out == NMEA_UDP       ||
+        settings->nmea_out == NMEA_TCP ) {
+      settings->nmea_out = NMEA_USB;
+    }
+    if (settings->gdl90 == GDL90_BLUETOOTH  ||
+        settings->gdl90 == GDL90_UDP) {
+      settings->gdl90 = GDL90_USB;
+    }
+    if (settings->d1090 == D1090_BLUETOOTH  ||
+        settings->d1090 == D1090_UDP) {
+      settings->d1090 = D1090_USB;
+    }
+    settings->rf_protocol = RF_PROTOCOL_ADSB_1090;
+    settings->txpower     = RF_TX_POWER_OFF;
+  }
 }
 
 static void LPC43_SPI_begin()
@@ -254,6 +294,16 @@ static void LPC43_swSer_begin(unsigned long baud)
   Serial_GNSS_In.begin(baud);
 }
 
+extern "C" {
+#include <i2c_lpc.h>
+}
+extern i2c_bus_t i2c0;
+
+bool LPC43_OLED_probe_func()
+{
+  return i2c_probe(&i2c0, SSD1306_OLED_I2C_ADDR);
+}
+
 static byte LPC43_Display_setup()
 {
   byte rval = DISPLAY_NONE;
@@ -262,12 +312,20 @@ static byte LPC43_Display_setup()
   rval = portapack() ? DISPLAY_TFT_PORTAPACK : rval;
 #endif /* USE_PORTAPACK */
 
+#if defined(USE_OLED)
+  if (rval != DISPLAY_TFT_PORTAPACK) {
+    rval = OLED_setup();
+  }
+#endif /* USE_OLED */
+
   return rval;
 }
 
 static void LPC43_Display_loop()
 {
-
+#if defined(USE_OLED)
+  OLED_loop();
+#endif /* USE_OLED */
 }
 
 static void LPC43_Display_fini(int reason)
@@ -317,6 +375,10 @@ static unsigned long LPC43_get_PPS_TimeMarker() {
   return PPS_TimeMarker;
 }
 
+static bool LPC43_Baro_setup() {
+  return true;
+}
+
 static void LPC43_UATSerial_begin(unsigned long baud)
 {
 
@@ -329,7 +391,11 @@ static void LPC43_UATModule_restart()
 
 static void LPC43_WDT_setup()
 {
-  /* TBD */
+  reset_driver_initialize();
+#if SOFTRF_USB_FW_VERSION > 0x0101 /* not active until release */
+  platform_watchdog_enable(16000000UL); /* approx. 6 seconds */
+  wdt_is_active = true;
+#endif
 }
 
 static void LPC43_WDT_fini()
@@ -343,40 +409,15 @@ static void LPC43_WDT_fini()
 static unsigned long dfu_time_marker = 0;
 static bool prev_dfu_state = false;
 static bool is_dfu_click = false;
-static usb_data_t prev_usb_data_type = USB_DATA_D1090;
 
-void On_Button_Clock()
+static void On_Button_Click()
 {
-  led_toggle(LED3);
-
-  if (usb_data_type != USB_DATA_D1090) {
-    prev_usb_data_type = usb_data_type;
-    usb_data_type = USB_DATA_D1090;
-
-    if (prev_usb_data_type == USB_DATA_NMEA) {
-      settings->nmea_out = NMEA_OFF;
-    } else if (prev_usb_data_type == USB_DATA_GDL90) {
-      settings->gdl90    = GDL90_OFF;
-    }
-
-    settings->d1090 = D1090_USB;
-
-  } else {
-
-    usb_data_type = prev_usb_data_type;
-    prev_usb_data_type = USB_DATA_D1090;
-
-    settings->d1090 = D1090_OFF;
-
-    if (usb_data_type == USB_DATA_NMEA) {
-      settings->nmea_out = NMEA_USB;
-    } else if (usb_data_type == USB_DATA_GDL90) {
-      settings->gdl90    = GDL90_USB;
-    }
-  }
+#if defined(USE_OLED)
+  OLED_Next_Page();
+#endif
 }
 
-void On_Button_LongPress()
+static void On_Button_LongPress()
 {
 
 }
@@ -409,7 +450,7 @@ static void LPC43_Button_loop()
     if (prev_dfu_state) {
       if (is_dfu_click) {
 
-        On_Button_Clock();
+        On_Button_Click();
 
         is_dfu_click = false;
       }
@@ -506,7 +547,7 @@ IODev_ops_t LPC43_USBSerial_ops = {
 
 const SoC_ops_t LPC43_ops = {
   SOC_LPC43,
-  "LPC43",
+  PLAT_LPC43_NAME,
   LPC43_setup,
   LPC43_post_init,
   LPC43_loop,
@@ -515,8 +556,8 @@ const SoC_ops_t LPC43_ops = {
   LPC43_getChipId,
   LPC43_getResetInfoPtr,
   NULL,
-  NULL,
-  NULL,
+  LPC43_getResetReason,
+  LPC43_getFreeHeap,
   LPC43_random,
   NULL,
   NULL,
@@ -526,8 +567,8 @@ const SoC_ops_t LPC43_ops = {
   NULL,
   NULL,
   NULL,
-  NULL,
-  NULL,
+  LPC43_EEPROM_begin,
+  LPC43_EEPROM_extension,
   LPC43_SPI_begin,
   LPC43_swSer_begin,
   NULL,
@@ -541,7 +582,7 @@ const SoC_ops_t LPC43_ops = {
   LPC43_Battery_param,
   NULL,
   LPC43_get_PPS_TimeMarker,
-  NULL,
+  LPC43_Baro_setup,
   LPC43_UATSerial_begin,
   LPC43_UATModule_restart,
   LPC43_WDT_setup,
@@ -568,12 +609,22 @@ void setup_CPP(void)
   }
 
   Serial.println();
-  Serial.print(F(SOFTRF_IDENT "-"));
-  Serial.print(SoC->name);
-  Serial.print(F(" FW.REV: " SOFTRF_FIRMWARE_VERSION " DEV.ID: "));
+  Serial.print(LPC43_boot_str1);
   Serial.println(String(SoC->getChipId(), HEX));
-  Serial.println(F("Copyright (C) 2015-2022 Linar Yusupov. All rights reserved."));
+  Serial.print(LPC43_boot_str2); Serial.println(LPC43_boot_str3);
   Serial.flush();
+
+  Serial.println();
+  Serial.print(F("Reset reason: ")); Serial.print(SoC->getResetReason());
+  Serial.print(F(" ("));
+  Serial.print(system_reset_reason(), HEX);
+  Serial.println(')');
+  Serial.print(F("Free heap size: ")); Serial.println(SoC->getFreeHeap());
+  Serial.flush();
+
+  EEPROM_setup();
+
+  SoC->Button_setup();
 
   ThisAircraft.addr = SoC->getChipId() & 0x00FFFFFF;
   ThisAircraft.aircraft_type = settings->aircraft_type;
@@ -581,16 +632,12 @@ void setup_CPP(void)
   ThisAircraft.stealth  = settings->stealth;
   ThisAircraft.no_track = settings->no_track;
 
-  hw_info.gnss = GNSS_setup();
-
-  if (hw_info.gnss != GNSS_MODULE_NONE) {
-    settings->nmea_out = NMEA_USB;
-    settings->gdl90    = GDL90_OFF;
-
-    usb_data_type = USB_DATA_NMEA;
-  }
-
   hw_info.display = SoC->Display_setup();
+
+  if (hw_info.display != DISPLAY_TFT_PORTAPACK) {
+    hw_info.gnss = GNSS_setup();
+    hw_info.baro = Baro_setup();
+  }
 
   Traffic_setup();
   NMEA_setup();
@@ -603,26 +650,29 @@ void setup_CPP(void)
 
 void main_loop_CPP(void)
 {
-  GNSS_loop();
+  Baro_loop();
 
   ThisAircraft.timestamp = now();
-  if (isValidFix()) {
-    ThisAircraft.latitude = gnss.location.lat();
-    ThisAircraft.longitude = gnss.location.lng();
-    ThisAircraft.altitude = gnss.altitude.meters();
-    ThisAircraft.course = gnss.course.deg();
-    ThisAircraft.speed = gnss.speed.knots();
-    ThisAircraft.hdop = (uint16_t) gnss.hdop.value();
-    ThisAircraft.geoid_separation = gnss.separation.meters();
-  }
+
+  GNSS_loop();
 
   if (isValidFix()) {
+    ThisAircraft.latitude         = gnss.location.lat();
+    ThisAircraft.longitude        = gnss.location.lng();
+    ThisAircraft.altitude         = gnss.altitude.meters();
+    ThisAircraft.course           = gnss.course.deg();
+    ThisAircraft.speed            = gnss.speed.knots();
+    ThisAircraft.hdop             = (uint16_t) gnss.hdop.value();
+    ThisAircraft.geoid_separation = gnss.separation.meters();
+
     Traffic_loop();
   }
 
   Sound_loop();
 
   NMEA_loop();
+
+  SoC->Display_loop();
 
   SoC->loop();
 
@@ -731,13 +781,9 @@ void once_per_second_task_CPP(void)
   NMEA_Export();
   GDL90_Export();
 
-//  if (isValidFix()) {
-//    D1090_Export();
-//  }
+  /* D1090 data comes directly out of MODE-S low-level frames decoder */
 
-  if (isValidFix()) {
-    Traffic_loop();
-  }
+  ClearExpired();
 }
 
 void shutdown(int reason)

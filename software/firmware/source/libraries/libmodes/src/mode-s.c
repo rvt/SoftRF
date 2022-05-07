@@ -50,7 +50,7 @@ static mag_t maglut[129*129];
 #define M_PI                  3.14159265358979323846
 #endif /* ENERGIA_ARCH_CC13X2 */
 #else
-#include <compat.h>
+#include <Arduino.h>
 #define MODE_S_ICAO_CACHE_TTL 10   // Time to live of cached addresses.
 
 #if defined(MAG_LUT_128X128)
@@ -83,7 +83,7 @@ void mode_s_init(mode_s_t *self) {
   // different I/Q pair will result in a different magnitude value, not losing
   // any resolution.
 
-#if !defined(HACKRF_ONE) || (defined(HACKRF_ONE) && defined(DFU_MODE))
+#if !defined(HACKRF_ONE) || (defined(HACKRF_ONE) && !defined(MAGLUT_IN_ROM))
   int i, q;
 
   if (!maglut_initialized) {

@@ -107,10 +107,10 @@ extern Adafruit_NeoPixel strip;
 #define SOC_GPIO_PIN_GNSS_RX    23
 #define SOC_GPIO_PIN_GNSS_TX    12
 #define SOC_GPIO_PIN_BATTERY    36
-#if !defined(CONFIG_IDF_TARGET_ESP32S2)
+#if defined(CONFIG_IDF_TARGET_ESP32)
 #define SOC_GPIO_PIN_LED        25
 #else
-#define SOC_GPIO_PIN_LED        8
+#define SOC_GPIO_PIN_LED        7
 #endif
 
 #define SOC_GPIO_PIN_STATUS   (hw_info.model != SOFTRF_MODEL_PRIME_MK2 ?\
@@ -129,8 +129,10 @@ extern Adafruit_NeoPixel strip;
                                   SOC_GPIO_PIN_TBEAM_V08_PPS :          \
                                   SOC_UNUSED_PIN))
 
-#define SOC_GPIO_PIN_BUZZER   (hw_info.model != SOFTRF_MODEL_PRIME_MK2 ?\
-                                13 : SOC_UNUSED_PIN)
+#define SOC_GPIO_PIN_BUZZER   (hw_info.model == SOFTRF_MODEL_PRIME_MK2 ?\
+                                SOC_UNUSED_PIN :                        \
+                                (esp32_board == ESP32_DEVKIT ?          \
+                                  13 : SOC_UNUSED_PIN))
 
 /* SPI (does match Heltec & TTGO LoRa32 pins mapping) */
 #define SOC_GPIO_PIN_MOSI       27
@@ -231,7 +233,7 @@ extern Adafruit_NeoPixel strip;
 #define SOC_GPIO_PIN_T8_S2_TFT_BL       33
 
 // button
-#define SOC_GPIO_PIN_T8_S2_BUTTON       21
+#define SOC_GPIO_PIN_T8_S2_BUTTON       0 // 21
 
 // I2C
 #define SOC_GPIO_PIN_T8_S2_SDA          3
@@ -247,6 +249,9 @@ extern Adafruit_NeoPixel strip;
 #define SOC_GPIO_PIN_T8_S2_XP           15
 #define SOC_GPIO_PIN_T8_S2_XN           16
 
+#define SOC_GPIO_PIN_TDISPLAY_S2_LED    39
+#define SOC_GPIO_PIN_TDONGLE_S2_LED     39
+
 #if !defined(CONFIG_IDF_TARGET_ESP32S2)
 #define LV_HOR_RES                      (240) //Horizontal
 #else
@@ -261,7 +266,7 @@ extern Adafruit_NeoPixel strip;
 // GPS module
 #define SOC_GPIO_PIN_S3_GNSS_RX         15
 #define SOC_GPIO_PIN_S3_GNSS_TX         16
-#define SOC_GPIO_PIN_S3_GNSS_PPS        SOC_UNUSED_PIN /* TBD */
+#define SOC_GPIO_PIN_S3_GNSS_PPS        17
 
 // USB
 #define SOC_GPIO_PIN_S3_USB_DP          20
@@ -273,7 +278,24 @@ extern Adafruit_NeoPixel strip;
 #define SOC_GPIO_PIN_S3_SCK             36
 #define SOC_GPIO_PIN_S3_SS              34
 #define SOC_GPIO_PIN_S3_RST             33
-#define SOC_GPIO_PIN_S3_BUSY            38
+#define SOC_GPIO_PIN_S3_BUSY            48
+
+// I2C
+#define SOC_GPIO_PIN_S3_SDA             8
+#define SOC_GPIO_PIN_S3_SCL             9
+
+#define SOC_GPIO_PIN_S3_OLED_SDA        21
+#define SOC_GPIO_PIN_S3_OLED_SCL        18
+
+// button
+#define SOC_GPIO_PIN_S3_BUTTON          0
+
+// LEDs, active state - HIGH
+#define SOC_GPIO_PIN_S3_LED_RED         5
+#define SOC_GPIO_PIN_S3_LED_GREEN       6
+#define SOC_GPIO_PIN_S3_LED_BLUE        7
+#define SOC_GPIO_PIN_S3_STATUS          39
+#define SOC_GPIO_PIN_S3_LED4            38
 
 // Hardware pin definitions for TTGO LoRa V2 board
 // with OLED SSD1306 0,96" I2C Display

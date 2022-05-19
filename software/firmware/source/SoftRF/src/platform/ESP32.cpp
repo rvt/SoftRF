@@ -142,6 +142,19 @@ const char *ESP32S2_Device_Manufacturer = SOFTRF_IDENT;
 const char *ESP32S2_Device_Model = "Standalone Edition";
 const uint16_t ESP32S2_Device_Version = SOFTRF_USB_FW_VERSION;
 
+#if defined(EXCLUDE_WIFI)
+// Dummy definition to satisfy build sequence
+char UDPpacketBuffer[UDP_PACKET_BUFSIZE];
+#endif /* EXCLUDE_WIFI */
+
+#if defined(CONFIG_IDF_TARGET_ESP32S3)
+#include <SD.h>
+
+SPIClass uSD_SPI(HSPI);
+
+static bool uSD_is_mounted = false;
+#endif /* CONFIG_IDF_TARGET_ESP32S3 */
+
 static void IRAM_ATTR ESP32_PMU_Interrupt_handler() {
   portENTER_CRITICAL_ISR(&PMU_mutex);
   PMU_Irq = true;
@@ -348,31 +361,69 @@ static void ESP32_setup()
 
     hw_info.revision = 203;
 
-#if defined(USE_USB_HOST)
-    Serial.end();
-    Serial.begin(SERIAL_OUT_BR, SERIAL_IN_BITS,
-                 SOC_GPIO_PIN_S3_CONS_RX, SOC_GPIO_PIN_S3_CONS_TX);
-#endif /* USE_USB_HOST */
-
-#if defined(ARDUINO_ESP32S3_USB)
+#if ARDUINO_USB_CDC_ON_BOOT
     USB.manufacturerName(ESP32S2_Device_Manufacturer);
     USB.productName(ESP32S2_Device_Model);
     USB.firmwareVersion(ESP32S2_Device_Version);
-#endif /* ARDUINO_ESP32S3_USB */
+
+    SerialOutput.begin(SERIAL_OUT_BR, SERIAL_OUT_BITS,
+                       SOC_GPIO_PIN_S3_CONS_RX,
+                       SOC_GPIO_PIN_S3_CONS_TX);
+#endif /* ARDUINO_USB_CDC_ON_BOOT */
+
+    /* uSD-SPI init */
+    uSD_SPI.begin(SOC_GPIO_PIN_S3_SD_SCK,
+                  SOC_GPIO_PIN_S3_SD_MISO,
+                  SOC_GPIO_PIN_S3_SD_MOSI,
+                  SOC_GPIO_PIN_S3_SD_SS);
+
+    uSD_is_mounted = SD.begin(SOC_GPIO_PIN_S3_SD_SS, uSD_SPI);
 #endif /* CONFIG_IDF_TARGET_ESP32S3 */
   }
 
-#if ARDUINO_USB_CDC_ON_BOOT && defined(CONFIG_IDF_TARGET_ESP32S2)
+#if ARDUINO_USB_CDC_ON_BOOT && (defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3))
   Serial.begin(SERIAL_OUT_BR);
 
   for (int i=0; i < 20; i++) {if (Serial) break; else delay(100);}
 #else
   Serial.begin(SERIAL_OUT_BR, SERIAL_OUT_BITS);
-#endif /* ARDUINO_USB_CDC_ON_BOOT && CONFIG_IDF_TARGET_ESP32S2 */
+#endif /* ARDUINO_USB_CDC_ON_BOOT && (CONFIG_IDF_TARGET_ESP32S2 || CONFIG_IDF_TARGET_ESP32S3) */
 }
 
 static void ESP32_post_init()
 {
+#if defined(CONFIG_IDF_TARGET_ESP32S3)
+  Serial.println();
+
+  if (!uSD_is_mounted) {
+    Serial.println(F("WARNING: unable to mount micro-SD card."));
+  } else {
+    uint8_t cardType = SD.cardType();
+
+    if(cardType == CARD_NONE){
+      Serial.println(F("NOTICE: No micro-SD card attached."));
+    } else {
+
+      Serial.print(F("SD Card Type: "));
+      if(cardType == CARD_MMC){
+          Serial.println(F("MMC"));
+      } else if(cardType == CARD_SD){
+          Serial.println(F("SDSC"));
+      } else if(cardType == CARD_SDHC){
+          Serial.println(F("SDHC"));
+      } else {
+          Serial.println(F("UNKNOWN"));
+      }
+
+      Serial.printf("SD Card Size: %lluMB\r\n", SD.cardSize()   / (1024 * 1024));
+      Serial.printf("Total space : %lluMB\r\n", SD.totalBytes() / (1024 * 1024));
+      Serial.printf("Used space  : %lluMB\r\n", SD.usedBytes()  / (1024 * 1024));
+
+      hw_info.storage = STORAGE_SD;
+    }
+  }
+#endif /* CONFIG_IDF_TARGET_ESP32S3 */
+
   Serial.println();
   Serial.println(F("Data output device(s):"));
 
@@ -530,7 +581,10 @@ static void ESP32_fini(int reason)
     axp.setPowerOutPut(AXP192_DCDC2, AXP202_OFF);
 
     /* workaround against AXP I2C access blocking by 'noname' OLED */
-    if (u8x8 == NULL) {
+#if defined(USE_OLED)
+    if (u8x8 == NULL)
+#endif /* USE_OLED */
+    {
       axp.setPowerOutPut(AXP192_DCDC1, AXP202_OFF);
     }
     axp.setPowerOutPut(AXP192_EXTEN, AXP202_OFF);
@@ -773,6 +827,7 @@ static const int8_t ESP32_dBm_to_power_level[21] = {
 
 static void ESP32_WiFi_set_param(int ndx, int value)
 {
+#if !defined(EXCLUDE_WIFI)
   uint32_t lt = value * 60; /* in minutes */
 
   switch (ndx)
@@ -797,6 +852,7 @@ static void ESP32_WiFi_set_param(int ndx, int value)
   default:
     break;
   }
+#endif /* EXCLUDE_WIFI */
 }
 
 static IPAddress ESP32_WiFi_get_broadcast()
@@ -816,6 +872,7 @@ static IPAddress ESP32_WiFi_get_broadcast()
 
 static void ESP32_WiFi_transmit_UDP(int port, byte *buf, size_t size)
 {
+#if !defined(EXCLUDE_WIFI)
   IPAddress ClientIP;
   WiFiMode_t mode = WiFi.getMode();
   int i = 0;
@@ -849,6 +906,7 @@ static void ESP32_WiFi_transmit_UDP(int port, byte *buf, size_t size)
   default:
     break;
   }
+#endif /* EXCLUDE_WIFI */
 }
 
 static void ESP32_WiFiUDP_stopAll()
@@ -858,11 +916,18 @@ static void ESP32_WiFiUDP_stopAll()
 
 static bool ESP32_WiFi_hostname(String aHostname)
 {
+#if defined(EXCLUDE_WIFI)
+  return false;
+#else
   return WiFi.setHostname(aHostname.c_str());
+#endif /* EXCLUDE_WIFI */
 }
 
 static int ESP32_WiFi_clients_count()
 {
+#if defined(EXCLUDE_WIFI)
+  return 0;
+#else
   WiFiMode_t mode = WiFi.getMode();
 
   switch (mode)
@@ -879,6 +944,7 @@ static int ESP32_WiFi_clients_count()
   default:
     return -1; /* error */
   }
+#endif /* EXCLUDE_WIFI */
 }
 
 static bool ESP32_EEPROM_begin(size_t size)
@@ -895,7 +961,7 @@ static bool ESP32_EEPROM_begin(size_t size)
 static void ESP32_EEPROM_extension(int cmd)
 {
   if (cmd == EEPROM_EXT_LOAD) {
-#if !defined(CONFIG_IDF_TARGET_ESP32S2) || defined(USE_USB_HOST)
+#if defined(CONFIG_IDF_TARGET_ESP32) || defined(USE_USB_HOST)
     if (settings->nmea_out == NMEA_USB) {
       settings->nmea_out = NMEA_UART;
     }
@@ -905,7 +971,7 @@ static void ESP32_EEPROM_extension(int cmd)
     if (settings->d1090 == D1090_USB) {
       settings->d1090 = D1090_UART;
     }
-#endif /* CONFIG_IDF_TARGET_ESP32S2 */
+#endif /* CONFIG_IDF_TARGET_ESP32 */
   }
 }
 
@@ -937,24 +1003,31 @@ static void ESP32_swSer_begin(unsigned long baud)
     Serial.println(F(" is detected."));
 
     if (hw_info.revision == 8) {
-      Serial_GNSS_In.begin(baud, SERIAL_IN_BITS, SOC_GPIO_PIN_TBEAM_V08_RX, SOC_GPIO_PIN_TBEAM_V08_TX);
+      Serial_GNSS_In.begin(baud, SERIAL_IN_BITS,
+                           SOC_GPIO_PIN_TBEAM_V08_RX,
+                           SOC_GPIO_PIN_TBEAM_V08_TX);
     } else {
-      Serial_GNSS_In.begin(baud, SERIAL_IN_BITS, SOC_GPIO_PIN_TBEAM_V05_RX, SOC_GPIO_PIN_TBEAM_V05_TX);
+      Serial_GNSS_In.begin(baud, SERIAL_IN_BITS,
+                           SOC_GPIO_PIN_TBEAM_V05_RX,
+                           SOC_GPIO_PIN_TBEAM_V05_TX);
     }
   } else {
     if (esp32_board == ESP32_TTGO_T_WATCH) {
       Serial.println(F("INFO: TTGO T-Watch is detected."));
-      Serial_GNSS_In.begin(baud, SERIAL_IN_BITS, SOC_GPIO_PIN_TWATCH_RX, SOC_GPIO_PIN_TWATCH_TX);
+      Serial_GNSS_In.begin(baud, SERIAL_IN_BITS,
+                           SOC_GPIO_PIN_TWATCH_RX, SOC_GPIO_PIN_TWATCH_TX);
     } else if (esp32_board == ESP32_TTGO_V2_OLED) {
       /* 'Mini' (TTGO T3 + GNSS) */
       Serial.print(F("INFO: TTGO T3 rev. "));
       Serial.print(hw_info.revision);
       Serial.println(F(" is detected."));
-      Serial_GNSS_In.begin(baud, SERIAL_IN_BITS, TTGO_V2_PIN_GNSS_RX, TTGO_V2_PIN_GNSS_TX);
+      Serial_GNSS_In.begin(baud, SERIAL_IN_BITS,
+                           TTGO_V2_PIN_GNSS_RX, TTGO_V2_PIN_GNSS_TX);
     } else if (esp32_board == ESP32_S2_T8_V1_1) {
       Serial.println(F("INFO: TTGO T8_S2 rev. 1.1 is detected."));
       Serial_GNSS_In.begin(baud, SERIAL_IN_BITS,
-                           SOC_GPIO_PIN_T8_S2_GNSS_RX, SOC_GPIO_PIN_T8_S2_GNSS_TX);
+                           SOC_GPIO_PIN_T8_S2_GNSS_RX,
+                           SOC_GPIO_PIN_T8_S2_GNSS_TX);
     } else if (esp32_board == ESP32_S3_DEVKIT) {
       Serial.println(F("INFO: ESP32-S3 DevKit is detected."));
       Serial_GNSS_In.begin(baud, SERIAL_IN_BITS,
@@ -1427,13 +1500,17 @@ static void ESP32_Battery_setup()
 
     /* TBD */
   } else {
-#if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32S3)
+#if defined(CONFIG_IDF_TARGET_ESP32)
     calibrate_voltage(hw_info.model == SOFTRF_MODEL_PRIME_MK2 ||
                      (esp32_board == ESP32_TTGO_V2_OLED && hw_info.revision == 16) ?
                       ADC1_GPIO35_CHANNEL : ADC1_GPIO36_CHANNEL);
-#else
+#elif defined(CONFIG_IDF_TARGET_ESP32S2)
     calibrate_voltage(ADC1_GPIO9_CHANNEL);
-#endif /* CONFIG_IDF_TARGET_ESP32S2 */
+#elif defined(CONFIG_IDF_TARGET_ESP32S3)
+    calibrate_voltage(ADC1_GPIO2_CHANNEL);
+#else
+#error "This ESP32 family build variant is not supported!"
+#endif /* CONFIG_IDF_TARGET_ESP32 */
   }
 }
 
@@ -1702,7 +1779,7 @@ static void ESP32_Button_fini()
   }
 }
 
-#if defined(CONFIG_IDF_TARGET_ESP32S2)
+#if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3)
 
 #if defined(USE_USB_HOST)
 
@@ -1947,12 +2024,12 @@ const SoC_ops_t ESP32_ops = {
   ESP32_SPI_begin,
   ESP32_swSer_begin,
   ESP32_swSer_enableRx,
-#if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32S3)
+#if !defined(CONFIG_IDF_TARGET_ESP32S2)
   &ESP32_Bluetooth_ops,
 #else
   NULL,
 #endif /* CONFIG_IDF_TARGET_ESP32S2 */
-#if defined(CONFIG_IDF_TARGET_ESP32S2) && \
+#if (defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3)) && \
    (ARDUINO_USB_CDC_ON_BOOT || defined(USE_USB_HOST))
   &ESP32S2_USBSerial_ops,
 #else

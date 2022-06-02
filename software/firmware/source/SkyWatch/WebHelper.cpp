@@ -27,6 +27,7 @@
 #include "GDL90Helper.h"
 #include "BaroHelper.h"
 #include "BluetoothHelper.h"
+#include "GNSSHelper.h"
 
 #include <protocol.h>
 #include <freqplan.h>
@@ -88,12 +89,14 @@ static const char about_html[] PROGMEM = "<html>\
 <tr><th align=left>Ryan David</th><td align=left>GDL90 decoder</td></tr>\
 <tr><th align=left>Arundale Ramanathan</th><td align=left>Sqlite3 Arduino library</td></tr>\
 <tr><th align=left>FlarmNet<br>GliderNet</th><td align=left>aircrafts data</td></tr>\
-<tr><th align=left>Shenzhen Xin Yuan<br>(LilyGO) ET company</th><td align=left>TTGO T-Watch</td></tr>\
+<tr><th align=left>Shenzhen Xin Yuan<br>(LilyGO) ET company</th><td align=left>TTGO T-Watch and T-Dongle</td></tr>\
 <tr><th align=left>Brian Park</th><td align=left>AceButton library</td></tr>\
 <tr><th align=left>flashrom.org project</th><td align=left>Flashrom library</td></tr>\
 <tr><th align=left>Evandro Copercini</th><td align=left>ESP32 BT SPP library</td></tr>\
 <tr><th align=left>Lewis He</th><td align=left>AXP20X, BMA423, FT5206 and PCF8563 libraries</td></tr>\
 <tr><th align=left>Bodmer</th><td align=left>TFT library</td></tr>\
+<tr><th align=left>Ivan Grokhotkov</th><td align=left>Arduino core for ESP8266</td></tr>\
+<tr><th align=left>Dariusz Krempa</th><td align=left>ESP32TinyUSB library</td></tr>\
 </table>\
 <hr>\
 Copyright (C) 2019-2022 &nbsp;&nbsp;&nbsp; Linar Yusupov\
@@ -1004,13 +1007,28 @@ void handleStatus() {
       hw_info.display      == DISPLAY_EPD_2_7      ? "e-Paper" :
       hw_info.display      == DISPLAY_OLED_2_4     ? "OLED"    :
       hw_info.display      == DISPLAY_TFT_TTGO_240 ? "LCD"     : "NONE",
-      hw_info.storage      == STORAGE_uSD          ? "uSD"     : "NONE",
+      hw_info.storage      == STORAGE_SD           ? "SD"      : "NONE",
       (baro_chip == NULL ? "NONE" : baro_chip->name)
     );
 
     len = strlen(offset);
     offset += len;
     size -= len;
+
+  } else if (hw_info.model == SOFTRF_MODEL_WEBTOP_USB) {
+
+    snprintf_P ( offset, size,
+      PSTR("\
+<tr><th align=left>Storage</th><td align=right>%s</td></tr>\
+<tr><th align=left>GNSS module</th><td align=right>%s</td></tr>"),
+      hw_info.storage == STORAGE_SD ? "SD" : "NONE",
+      GNSS_name[hw_info.gnss]
+    );
+
+    len = strlen(offset);
+    offset += len;
+    size -= len;
+
   }
 
   snprintf_P ( offset, size,
@@ -1079,6 +1097,7 @@ void handleStatus() {
         NMEA_hasFLARM()    ? "FLARM" : "",
         NMEA_has3DFix()    ? "3D" : "NONE",
         ThisDevice.addr,
+        !NMEA_isConnected()                          ? "NONE"   :
         ThisDevice.protocol == RF_PROTOCOL_LEGACY    ? "Legacy" :
         ThisDevice.protocol == RF_PROTOCOL_OGNTP     ? "OGNTP"  :
         ThisDevice.protocol == RF_PROTOCOL_P3I       ? "P3I"    :

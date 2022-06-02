@@ -24,6 +24,7 @@
 #include "TrafficHelper.h"
 #include "EEPROMHelper.h"
 #include "WiFiHelper.h"
+#include "GNSSHelper.h"
 
 TinyGPSPlus nmea;
 
@@ -115,7 +116,7 @@ static void NMEA_Parse_Character(char c)
             (NMEABuffer[ndx+1] == 'G' || NMEABuffer[ndx+1] == 'P')) {
 
           size_t write_size = NMEA_cnt - ndx + 1;
-          NMEA_Out((byte *) &NMEABuffer[ndx], write_size, true);
+          NMEA_Out(settings->s.nmea_out, (byte *) &NMEABuffer[ndx], write_size, true);
           break;
         }
       }
@@ -377,7 +378,9 @@ void NMEA_loop()
       while (SoC->USB_ops->available() > 0) {
         c = SoC->USB_ops->read();
 #if 1
-        Serial.print(c);
+        if (hw_info.gnss == GNSS_MODULE_NONE) {
+          Serial.print(c);
+        }
 #endif
         NMEA_Parse_Character(c);
         NMEA_TimeMarker = millis();
@@ -420,7 +423,7 @@ void NMEA_loop()
 
     NMEA_add_checksum(PGRMZBuffer, sizeof(PGRMZBuffer) - strlen(PGRMZBuffer));
 
-    NMEA_Out((byte *) PGRMZBuffer, strlen(PGRMZBuffer), false);
+    NMEA_Out(settings->s.nmea_out, (byte *) PGRMZBuffer, strlen(PGRMZBuffer), false);
 
     PGRMZ_TimeMarker = millis();
   }
@@ -489,8 +492,7 @@ bool NMEA_Save_Settings()
 {
     int nmea_out = NMEA_UART;
 
-    if (hw_info.model    == SOFTRF_MODEL_WEBTOP &&
-        hw_info.revision == HW_REV_TDONGLE      &&
+    if (hw_info.model == SOFTRF_MODEL_WEBTOP_USB &&
         settings->m.connection == CON_USB) {
       nmea_out = NMEA_USB;
     }
@@ -534,9 +536,9 @@ bool NMEA_has3DFix()
           NMEA_Status.GPS == GNSS_STATUS_3D_MOVING);
 }
 
-void NMEA_Out(byte *buf, size_t size, bool nl)
+void NMEA_Out(uint8_t dest, byte *buf, size_t size, bool nl)
 {
-  switch(settings->s.nmea_out)
+  switch (dest)
   {
   case NMEA_UART:
   case NMEA_USB:

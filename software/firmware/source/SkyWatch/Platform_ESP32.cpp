@@ -34,6 +34,7 @@
 #include "BluetoothHelper.h"
 #include "BatteryHelper.h"
 #include "TFTHelper.h"
+#include "GNSSHelper.h"
 
 #include <battery.h>
 #include <sqlite3.h>
@@ -104,6 +105,8 @@ portMUX_TYPE BMA_mutex = portMUX_INITIALIZER_UNLOCKED;
 volatile bool PMU_Irq         = false;
 volatile bool BMA_Irq         = false;
 
+static bool has_usb_client    = false;
+
 static void IRAM_ATTR ESP32_PMU_Interrupt_handler() {
   portENTER_CRITICAL_ISR(&PMU_mutex);
   PMU_Irq = true;
@@ -132,6 +135,8 @@ static int ESP32_I2C_writeBytes(uint8_t devAddress, uint8_t regAddress, uint8_t 
     if (!i2c) return 0xFF;
     return i2c->writeBytes(devAddress, regAddress, data, len);
 }
+
+#define TAG "MAC"
 
 static void ESP32_setup()
 {
@@ -181,24 +186,24 @@ static void ESP32_setup()
       hw_info.revision = HW_REV_T_WATCH_19;
       break;
     case MakeFlashId(GIGADEVICE_ID, GIGADEVICE_GD25LQ32):
-      hw_info.model = SOFTRF_MODEL_WEBTOP;
+      hw_info.model = SOFTRF_MODEL_WEBTOP_SERIAL;
       hw_info.revision = HW_REV_T8;
       break;
 #if defined(CONFIG_IDF_TARGET_ESP32S2)
     case MakeFlashId(WINBOND_NEX_ID, WINBOND_NEX_W25Q32_V):
     case MakeFlashId(BOYA_ID, BOYA_BY25Q32AL):
-      hw_info.model = SOFTRF_MODEL_WEBTOP;
+      hw_info.model = SOFTRF_MODEL_WEBTOP_USB;
       hw_info.revision = HW_REV_TDONGLE;
       break;
 #endif /* CONFIG_IDF_TARGET_ESP32S2 */
 #if defined(CONFIG_IDF_TARGET_ESP32S3)
     case MakeFlashId(GIGADEVICE_ID, GIGADEVICE_GD25Q64):
-      hw_info.model = SOFTRF_MODEL_WEBTOP;
+      hw_info.model = SOFTRF_MODEL_WEBTOP_SERIAL;
       hw_info.revision = HW_REV_DEVKIT;
       break;
 #endif /* CONFIG_IDF_TARGET_ESP32S3 */
     default:
-      hw_info.model = SOFTRF_MODEL_WEBTOP;
+      hw_info.model = SOFTRF_MODEL_WEBTOP_SERIAL;
       hw_info.revision = HW_REV_UNKNOWN;
       break;
     }
@@ -206,11 +211,11 @@ static void ESP32_setup()
     switch(flash_id)
     {
     case MakeFlashId(GIGADEVICE_ID, GIGADEVICE_GD25Q32):
-      hw_info.model = SOFTRF_MODEL_WEBTOP;
+      hw_info.model = SOFTRF_MODEL_WEBTOP_SERIAL;
       hw_info.revision = HW_REV_DEVKIT;
       break;
     default:
-      hw_info.model = SOFTRF_MODEL_WEBTOP;
+      hw_info.model = SOFTRF_MODEL_WEBTOP_SERIAL;
       hw_info.revision = HW_REV_UNKNOWN;
       break;
     }
@@ -270,10 +275,12 @@ static void ESP32_setup()
       pinMode(SOC_GPIO_PIN_TWATCH_BMA_IRQ, INPUT);
       attachInterrupt(digitalPinToInterrupt(SOC_GPIO_PIN_TWATCH_BMA_IRQ),
                       ESP32_BMA_Interrupt_handler, RISING);
+      hw_info.imu = IMU_BMA423;
     }
 
     if (rtc_present && (i2c != nullptr)) {
       rtc = new PCF8563_Class(*i2c);
+      hw_info.rtc = RTC_PCF8563;
     }
   }
 
@@ -291,6 +298,78 @@ static void ESP32_setup()
                 SOC_GPIO_PIN_TDONGLE_SS
 #endif /* CONFIG_IDF_TARGET_ESP32SX */
                );
+
+#if ARDUINO_USB_CDC_ON_BOOT && (defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3))
+  Serial.begin(SERIAL_OUT_BR);
+
+  for (int i=0; i < 20; i++) {if (Serial) break; else delay(100);}
+#else
+#if defined(USE_USB_HOST)
+  Serial.begin(SERIAL_OUT_BR, SERIAL_OUT_BITS,
+               SOC_GPIO_PIN_TDONGLE_CONS_RX, SOC_GPIO_PIN_TDONGLE_CONS_TX);
+#else
+  Serial.begin(SERIAL_OUT_BR, SERIAL_OUT_BITS);
+#endif /* USE_USB_HOST */
+#endif /* ARDUINO_USB_CDC_ON_BOOT && (CONFIG_IDF_TARGET_ESP32S2 || CONFIG_IDF_TARGET_ESP32S3) */
+}
+
+const char SoftRF_text2[]   = "Edition";
+const char SoftRF_text3[]   = "Standalone";
+const char SoftRF_text4[]   = "Prime 2";
+const char SoftRF_text5[]   = "Dongle";
+const char SoftRF_text6[]   = "Badge";
+const char SoftRF_text7[]   = "Academy";
+const char SoftRF_text8[]   = "ES";
+const char SoftRF_text9[]   = "Lego";
+
+static void ESP32_post_init()
+{
+  const char *str1 = "NO";
+  const char *str2 = "DEVICE";
+
+  switch (hw_info.display)
+  {
+  case DISPLAY_TFT_TTGO_135:
+    if (has_usb_client) {
+      str2 = SoftRF_text2;
+
+      switch (hw_info.slave)
+      {
+      case SOFTRF_MODEL_STANDALONE:
+        str1 = SoftRF_text3;
+        break;
+      case SOFTRF_MODEL_PRIME:
+        str1 = SoftRF_text4;
+        break;
+      case SOFTRF_MODEL_DONGLE:
+        str1 = SoftRF_text5;
+        break;
+      case SOFTRF_MODEL_BADGE:
+        str1 = SoftRF_text6;
+        break;
+      case SOFTRF_MODEL_ACADEMY:
+        str1 = SoftRF_text7;
+        break;
+      case SOFTRF_MODEL_ES:
+        str1 = SoftRF_text8;
+        break;
+      case SOFTRF_MODEL_LEGO:
+        str1 = SoftRF_text9;
+        break;
+      default:
+        str1 = "Unknown";
+        break;
+      }
+    }
+
+    TFT_Message(str1, str2);
+    delay(3000);
+
+    break;
+  case DISPLAY_NONE:
+  default:
+    break;
+  }
 }
 
 static void ESP32_loop()
@@ -342,6 +421,36 @@ static void ESP32_loop()
       }
     }
   }
+
+#if defined(USE_USB_HOST)
+  if (hw_info.model == SOFTRF_MODEL_WEBTOP_USB &&
+      hw_info.gnss  != GNSS_MODULE_NONE        &&
+      settings->m.connection == CON_USB) {
+
+    int c = -1;
+
+    while (true) {
+      if (Serial_GNSS_In.available() > 0) {
+        c = Serial_GNSS_In.read();
+      } else {
+        /* return back if no input data */
+        break;
+      }
+
+      if (c == -1) {
+        /* retry */
+        continue;
+      }
+
+      if (isPrintable(c) || c == '\r' || c == '\n') {
+        if (SoC->USB_ops) {
+          uint8_t symbol = (uint8_t) c;
+          SoC->USB_ops->write(&symbol, 1);
+        }
+      }
+    }
+  }
+#endif /* USE_USB_HOST */
 }
 
 static void ESP32_fini()
@@ -545,9 +654,19 @@ static void ESP32_swSer_begin(unsigned long baud)
                       SERIAL_IN_BITS : SERIAL_8N1;
     SerialInput.begin(baud, config, SOC_GPIO_PIN_GNSS_RX, SOC_GPIO_PIN_GNSS_TX);
   } else {
-#if !defined(USE_USB_HOST)
+#if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3)
+#if ARDUINO_USB_ON_BOOT == 0
+#if defined(USE_USB_HOST)
+    if (hw_info.model == SOFTRF_MODEL_WEBTOP_USB) {
+      Serial_GNSS_In.updateBaudRate(SERIAL_GNSS_BR);
+    }
+#else
     Serial.updateBaudRate(baud);
-#endif
+#endif /* USE_USB_HOST */
+#endif /* ARDUINO_USB_ON_BOOT */
+#else
+    Serial.updateBaudRate(baud);
+#endif /* defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3) */
   }
 }
 
@@ -569,13 +688,11 @@ static void ESP32_Battery_setup()
 
     /* TBD */
 
-  } else if (hw_info.model    == SOFTRF_MODEL_WEBTOP &&
-             hw_info.revision == HW_REV_TDONGLE) {
+  } else if (hw_info.model == SOFTRF_MODEL_WEBTOP_USB) {
 #if defined(CONFIG_IDF_TARGET_ESP32S2)
     calibrate_voltage(ADC1_GPIO9_CHANNEL);
 #endif /* CONFIG_IDF_TARGET_ESP32S2 */
-  } else if (hw_info.model    == SOFTRF_MODEL_WEBTOP &&
-             hw_info.revision == HW_REV_DEVKIT) {
+  } else if (hw_info.model == SOFTRF_MODEL_WEBTOP_SERIAL) {
 #if defined(CONFIG_IDF_TARGET_ESP32S3)
     calibrate_voltage(ADC1_GPIO2_CHANNEL);
 #endif /* CONFIG_IDF_TARGET_ESP32S3 */
@@ -599,8 +716,7 @@ static float ESP32_Battery_voltage()
 
 static bool ESP32_DB_init()
 {
-  int ss_pin = (hw_info.model    == SOFTRF_MODEL_WEBTOP &&
-                hw_info.revision == HW_REV_TDONGLE) ?
+  int ss_pin = (hw_info.model == SOFTRF_MODEL_WEBTOP_USB) ?
                SOC_GPIO_PIN_TDONGLE_SS : SOC_GPIO_PIN_TWATCH_SD_SS;
 
   if (!SD.begin(ss_pin, uSD_SPI)) {
@@ -982,8 +1098,7 @@ void handleEvent(AceButton* button, uint8_t eventType,
   Serial.println(buttonState);
 #endif
 
-  if (hw_info.model    == SOFTRF_MODEL_WEBTOP &&
-      hw_info.revision == HW_REV_TDONGLE) {
+  if (hw_info.model == SOFTRF_MODEL_WEBTOP_USB) {
     switch (eventType) {
       case AceButton::kEventClicked:
       case AceButton::kEventReleased:
@@ -1012,8 +1127,7 @@ void onModeButtonEvent() {
 
 static void ESP32_Button_setup()
 {
-  int button_pin = (hw_info.model    == SOFTRF_MODEL_WEBTOP &&
-                    hw_info.revision == HW_REV_TDONGLE) ?
+  int button_pin = (hw_info.model == SOFTRF_MODEL_WEBTOP_USB) ?
                    SOC_GPIO_PIN_TDONGLE_BUTTON : SOC_GPIO_PIN_TWATCH_BUTTON;
 
   // Button(s)) uses external pull up resistor.
@@ -1075,7 +1189,7 @@ static void ESP32_Service_Mode(boolean arg)
 {
   if (arg) {
 //    Serial.begin(SERIAL_IN_BR, SERIAL_IN_BITS);
-#if !defined(USE_USB_HOST)
+#if defined(CONFIG_IDF_TARGET_ESP32)
      Serial.updateBaudRate(SERIAL_IN_BR);
 #endif
   WiFi_fini();
@@ -1090,7 +1204,7 @@ static void ESP32_Service_Mode(boolean arg)
     inServiceMode = true;
   } else {
 //    Serial.begin(SERIAL_OUT_BR, SERIAL_OUT_BITS);
-#if !defined(USE_USB_HOST)
+#if defined(CONFIG_IDF_TARGET_ESP32)
     Serial.updateBaudRate(SERIAL_OUT_BR);
 #endif
     axp.setGPIOMode(AXP_GPIO_2, AXP_IO_OUTPUT_LOW_MODE);  // MCU_reset
@@ -1114,9 +1228,9 @@ static void ESP32_Service_Mode(boolean arg)
 #include "usb_host.hpp"
 #include "usb_acm.hpp"
 
-#define USB_TX_FIFO_SIZE (MAX_TRACKING_OBJECTS * 65 + 75 + 75 + 42 + 20)
-#define USB_RX_FIFO_SIZE (256)
-#define USB_MAX_WRITE_CHUNK_SIZE 256
+#define USB_TX_FIFO_SIZE (1024)
+#define USB_RX_FIFO_SIZE (1024)
+#define USB_MAX_WRITE_CHUNK_SIZE 64
 
 cbuf *USB_RX_FIFO, *USB_TX_FIFO;
 USBhost host;           // host is required to detect any device, before USB class is initialized
@@ -1151,6 +1265,8 @@ void acm_events(int event, void *data, size_t len)
     }
 }
 
+#define MAKE_USB_ID(v,p) ((uint32_t) v << 16 | (uint32_t) p)
+
 void client_event_callback(const usb_host_client_event_msg_t *event_msg, void *arg)
 {
     if (event_msg->event == USB_HOST_CLIENT_EVENT_NEW_DEV)
@@ -1159,6 +1275,36 @@ void client_event_callback(const usb_host_client_event_msg_t *event_msg, void *a
         usb_device_info_t info = host.getDeviceInfo();
         log_i("device speed: %s, device address: %d, max ep_ctrl size: %d, config: %d", info.speed ? "USB_SPEED_FULL" : "USB_SPEED_LOW", info.dev_addr, info.bMaxPacketSize0, info.bConfigurationValue);
         const usb_device_desc_t *dev_desc = host.getDeviceDescriptor();
+
+        uint8_t slave = SOFTRF_MODEL_UNKNOWN;
+
+        switch (MAKE_USB_ID(dev_desc->idVendor, dev_desc->idProduct))
+        {
+        case MAKE_USB_ID(0x0483, 0x5740):
+          slave = SOFTRF_MODEL_DONGLE; /* or Bracelet */
+          break;
+        case MAKE_USB_ID(0x239A, 0x8029):
+          slave = SOFTRF_MODEL_BADGE;
+          break;
+        case MAKE_USB_ID(0x2341, 0x804d):
+        case MAKE_USB_ID(0x2886, 0x802f):
+          slave = SOFTRF_MODEL_ACADEMY;
+          break;
+        case MAKE_USB_ID(0x1d50, 0x6089):
+          slave = SOFTRF_MODEL_ES;
+          break;
+        case MAKE_USB_ID(0x2e8a, 0x000a):
+        case MAKE_USB_ID(0x2e8a, 0xf00a):
+          slave = SOFTRF_MODEL_LEGO;
+          break;
+        case MAKE_USB_ID(0x1A86, 0x55D4): /* CH9102 */
+          slave = SOFTRF_MODEL_PRIME_MK2;
+          break;
+        case MAKE_USB_ID(0x303a, 0x0100):
+          slave = SOFTRF_MODEL_STANDALONE;
+          break;
+        }
+
         int offset = 0;
         for (size_t i = 0; i < dev_desc->bNumConfigurations; i++)
         {
@@ -1175,6 +1321,8 @@ void client_event_callback(const usb_host_client_event_msg_t *event_msg, void *a
                         device->init();
                         device->onEvent(acm_events);
                         device->setControlLine(1, 1);
+                        has_usb_client = true;
+                        hw_info.slave  = slave;
                         device->INDATA();
                     }
                 }
@@ -1190,6 +1338,7 @@ void client_event_callback(const usb_host_client_event_msg_t *event_msg, void *a
         {
             device->deinit();
             delete(device);
+            has_usb_client = false;
         }
         device = NULL;
     }
@@ -1202,6 +1351,8 @@ static void ESP32S2_USB_setup()
 
   host.registerClientCb(client_event_callback);
   host.init();
+
+  delay(2000);
 }
 
 static void ESP32S2_USB_loop()
@@ -1326,6 +1477,7 @@ const SoC_ops_t ESP32_ops = {
 #endif /* CONFIG_IDF_TARGET_ESP32SX */
   "" ,
   ESP32_setup,
+  ESP32_post_init,
   ESP32_loop,
   ESP32_fini,
   ESP32_reset,

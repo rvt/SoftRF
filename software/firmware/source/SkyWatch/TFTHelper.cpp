@@ -46,7 +46,7 @@ bool TFT_vmode_updated = true;
 
 static Gesture_t gesture = { false, {0,0}, {0,0} };
 
-const char SoftRF_text[]   = "SoftRF";
+const char SoftRF_text1[]   = "SoftRF";
 
 void TFT_off()
 {
@@ -74,7 +74,7 @@ void TFT_wakeup()
 
 void TFT_backlight_init(void)
 {
-    int bl_pin = (hw_info.model == SOFTRF_MODEL_WEBTOP) ?
+    int bl_pin = (hw_info.model == SOFTRF_MODEL_WEBTOP_USB) ?
                  SOC_GPIO_PIN_TDONGLE_TFT_BL : SOC_GPIO_PIN_TWATCH_TFT_BL;
 
     ledcAttachPin(bl_pin, BACKLIGHT_CHANNEL);
@@ -121,7 +121,7 @@ byte TFT_setup()
 
     SPI.begin(SOC_GPIO_PIN_TWATCH_TFT_SCK, SOC_GPIO_PIN_TWATCH_TFT_MISO,
               SOC_GPIO_PIN_TWATCH_TFT_MOSI, -1);
-  } else if (hw_info.model == SOFTRF_MODEL_WEBTOP) {
+  } else if (hw_info.model == SOFTRF_MODEL_WEBTOP_USB) {
     SPI.begin(SOC_GPIO_PIN_TDONGLE_SCK,  SOC_GPIO_PIN_TDONGLE_MISO,
               SOC_GPIO_PIN_TDONGLE_MOSI, SOC_GPIO_PIN_TDONGLE_SS);
 
@@ -169,10 +169,10 @@ byte TFT_setup()
     tft->setTextSize(2);
     tft->setTextColor(TFT_WHITE, TFT_NAVY);
 
-    uint16_t tbw = tft->textWidth(SoftRF_text);
+    uint16_t tbw = tft->textWidth(SoftRF_text1);
     uint16_t tbh = tft->fontHeight();
     tft->setCursor((tft->width() - tbw)/2, (tft->height() - tbh)/2);
-    tft->println(SoftRF_text);
+    tft->println(SoftRF_text1);
 
 #if LV_HOR_RES != 135
     rval = DISPLAY_TFT_TTGO_240;
@@ -450,6 +450,11 @@ void TFT_Mode_Cycle()
   }
 
   TFT_vmode_updated = true;
+}
+
+void TFT_info1()
+{
+
 }
 
 #endif /* EXCLUDE_TFT */

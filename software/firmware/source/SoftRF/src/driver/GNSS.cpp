@@ -61,7 +61,9 @@ TinyGPSPlus gnss;  // Create an Instance of the TinyGPS++ object called gnss
 
 uint8_t GNSSbuf[250]; // at least 3 lines of 80 characters each
                       // and 40+30*N bytes for "UBX-MON-VER" payload
-int GNSS_cnt = 0;
+
+int GNSS_cnt           = 0;
+uint16_t FW_Build_Year = 2000 + ((__DATE__[ 9]) - '0') * 10 + ((__DATE__[10]) - '0');
 
 const char *GNSS_name[] = {
   [GNSS_MODULE_NONE]    = "NONE",
@@ -1333,6 +1335,7 @@ void GNSSTimeSync()
   if ((GNSSTimeSyncMarker == 0 || (millis() - GNSSTimeSyncMarker > 60000)) &&
        gnss.time.isValid()                                                 &&
        gnss.time.isUpdated()                                               &&
+       gnss.date.year() >= FW_Build_Year                                   &&
       (gnss.time.age() <= 1000) /* 1s */ ) {
 #if 0
     Serial.print("Valid: ");

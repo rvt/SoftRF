@@ -82,6 +82,7 @@ extern "C" const void* portapack(void);
 #endif /* USE_PORTAPACK */
 
 static bool wdt_is_active = false;
+static bool has_portapack = false;
 
 #if defined(USE_OLED)
 const char *Protocol_ID[] = {
@@ -96,13 +97,19 @@ const char *Protocol_ID[] = {
 
 void LPC43_setup(void)
 {
-  SerialOutput.begin(SERIAL_OUT_BR, SERIAL_OUT_BITS);
+#if defined(USE_PORTAPACK)
+  has_portapack = portapack();
+#endif /* USE_PORTAPACK */
 
-  SerialOutput.println();
-  SerialOutput.print(LPC43_boot_str1);
-  SerialOutput.println(String(SoC->getChipId(), HEX));
-  SerialOutput.print(LPC43_boot_str2); SerialOutput.println(LPC43_boot_str3);
-  SerialOutput.println();
+  if (!has_portapack) {
+    SerialOutput.begin(SERIAL_OUT_BR, SERIAL_OUT_BITS);
+
+    SerialOutput.println();
+    SerialOutput.print(LPC43_boot_str1);
+    SerialOutput.println(SoC->getChipId(), HEX);
+    SerialOutput.print(LPC43_boot_str2); SerialOutput.println(LPC43_boot_str3);
+    SerialOutput.println();
+  }
 }
 
 static void LPC43_post_init()
@@ -110,8 +117,9 @@ static void LPC43_post_init()
   Serial.println();
   Serial.print(LPC43_Device_Manufacturer); Serial.print(' ');
   Serial.print(LPC43_Device_Model); Serial.println(" Power-on Self Test");
+//  Serial.println("SoftRF ES Edition Power-on Self Test");
   Serial.println();
-  Serial.flush();
+  SERIAL_FLUSH();
 
   Serial.print(F("GNSS    : "));
   Serial.println(hw_info.gnss    != GNSS_MODULE_NONE  ? F("PASS") : F("N/A"));
@@ -123,39 +131,24 @@ static void LPC43_post_init()
   Serial.println();
   Serial.println(F("Power-on Self Test is complete."));
   Serial.println();
-  Serial.flush();
+  SERIAL_FLUSH();
 
   Serial.println(F("Data output device(s):"));
 
   Serial.print(F("NMEA   - "));
-  switch (settings->nmea_out)
-  {
-    case NMEA_UART       :  Serial.println(F("UART"));    break;
-    case NMEA_USB        :  Serial.println(F("USB CDC")); break;
-    case NMEA_OFF        :
-    default              :  Serial.println(F("NULL"));    break;
-  }
-
+  Serial.println(settings->nmea_out == NMEA_UART ? F("UART")    :
+                 settings->nmea_out == NMEA_USB  ? F("USB CDC") :
+                                                   F("NULL"));
   Serial.print(F("GDL90  - "));
-  switch (settings->gdl90)
-  {
-    case GDL90_UART      :  Serial.println(F("UART"));    break;
-    case GDL90_USB       :  Serial.println(F("USB CDC")); break;
-    case GDL90_OFF       :
-    default              :  Serial.println(F("NULL"));    break;
-  }
-
+  Serial.println(settings->gdl90 == GDL90_UART  ? F("UART")    :
+                 settings->gdl90 == GDL90_USB   ? F("USB CDC") :
+                                                  F("NULL"));
   Serial.print(F("D1090  - "));
-  switch (settings->d1090)
-  {
-    case D1090_UART      :  Serial.println(F("UART"));    break;
-    case D1090_USB       :  Serial.println(F("USB CDC")); break;
-    case D1090_OFF       :
-    default              :  Serial.println(F("NULL"));    break;
-  }
-
+  Serial.println(settings->d1090 == D1090_UART  ? F("UART")    :
+                 settings->d1090 == D1090_USB   ? F("USB CDC") :
+                                                  F("NULL"));
   Serial.println();
-  Serial.flush();
+  SERIAL_FLUSH();
 
 #if defined(USE_OLED)
   OLED_info1();
@@ -257,30 +250,26 @@ static bool LPC43_EEPROM_begin(size_t size)
 static void LPC43_EEPROM_extension(int cmd)
 {
   if (cmd == EEPROM_EXT_LOAD) {
-    if (settings->mode != SOFTRF_MODE_NORMAL
-#if !defined(EXCLUDE_TEST_MODE)
-        &&
-        settings->mode != SOFTRF_MODE_TXRX_TEST
-#endif /* EXCLUDE_TEST_MODE */
-        ) {
-      settings->mode = SOFTRF_MODE_NORMAL;
-    }
-
-    if (settings->nmea_out == NMEA_BLUETOOTH ||
-        settings->nmea_out == NMEA_UDP       ||
-        settings->nmea_out == NMEA_TCP ) {
-      settings->nmea_out = NMEA_USB;
-    }
-    if (settings->gdl90 == GDL90_BLUETOOTH  ||
-        settings->gdl90 == GDL90_UDP) {
-      settings->gdl90 = GDL90_USB;
-    }
-    if (settings->d1090 == D1090_BLUETOOTH  ||
-        settings->d1090 == D1090_UDP) {
-      settings->d1090 = D1090_USB;
-    }
+    settings->mode        = SOFTRF_MODE_NORMAL;
     settings->rf_protocol = RF_PROTOCOL_ADSB_1090;
     settings->txpower     = RF_TX_POWER_OFF;
+
+    if ( settings->nmea_out == NMEA_BLUETOOTH ||
+         settings->nmea_out == NMEA_UDP       ||
+         settings->nmea_out == NMEA_TCP       ||
+        (settings->nmea_out == NMEA_UART && has_portapack)) {
+      settings->nmea_out = NMEA_USB;
+    }
+    if ( settings->gdl90 == GDL90_BLUETOOTH  ||
+         settings->gdl90 == GDL90_UDP        ||
+        (settings->gdl90 == GDL90_UART && has_portapack)) {
+      settings->gdl90 = GDL90_USB;
+    }
+    if ( settings->d1090 == D1090_BLUETOOTH  ||
+         settings->d1090 == D1090_UDP        ||
+        (settings->d1090 == D1090_UART && has_portapack)) {
+      settings->d1090 = D1090_USB;
+    }
   }
 }
 
@@ -308,9 +297,7 @@ static byte LPC43_Display_setup()
 {
   byte rval = DISPLAY_NONE;
 
-#if defined(USE_PORTAPACK)
-  rval = portapack() ? DISPLAY_TFT_PORTAPACK : rval;
-#endif /* USE_PORTAPACK */
+  rval = has_portapack ? DISPLAY_TFT_PORTAPACK : rval;
 
 #if defined(USE_OLED)
   if (rval != DISPLAY_TFT_PORTAPACK) {
@@ -465,6 +452,14 @@ static void LPC43_Button_fini()
   /* TODO */
 }
 
+void LPC43_USB_CDC_Sync()
+{
+  unsigned long ms = millis();
+  while (millis() - ms < 200) {
+    if (SoC->USB_ops) SoC->USB_ops->loop();
+  }
+}
+
 static void LPC43_USB_setup()
 {
   TinyUSB_Device_Init(0);
@@ -473,10 +468,6 @@ static void LPC43_USB_setup()
   USBDevice.setManufacturerDescriptor(LPC43_Device_Manufacturer);
   USBDevice.setProductDescriptor(LPC43_Device_Model);
   USBDevice.setDeviceVersion(LPC43_Device_Version);
-
-  if (USBSerial && USBSerial != Serial) {
-    USBSerial.begin(SERIAL_OUT_BR);
-  }
 }
 
 static bool usb_led_state = false;
@@ -497,9 +488,11 @@ static void LPC43_USB_loop()
 
 static void LPC43_USB_fini()
 {
+#if 0
   if (USBSerial && USBSerial != Serial) {
     USBSerial.end();
   }
+#endif
 }
 
 static int LPC43_USB_available()
@@ -605,14 +598,14 @@ void setup_CPP(void)
 
   unsigned long ms = millis();
   while (millis() - ms < 3000) {
-    if (Serial) { delay(1000); break; } else if (SoC->USB_ops) SoC->USB_ops->loop();
+    if (Serial) { delay(1000); break; } else LPC43_USB_CDC_Sync();
   }
 
   Serial.println();
   Serial.print(LPC43_boot_str1);
-  Serial.println(String(SoC->getChipId(), HEX));
+  Serial.println(SoC->getChipId(), HEX);
   Serial.print(LPC43_boot_str2); Serial.println(LPC43_boot_str3);
-  Serial.flush();
+  SERIAL_FLUSH();
 
   Serial.println();
   Serial.print(F("Reset reason: ")); Serial.print(SoC->getResetReason());
@@ -620,7 +613,7 @@ void setup_CPP(void)
   Serial.print(system_reset_reason(), HEX);
   Serial.println(')');
   Serial.print(F("Free heap size: ")); Serial.println(SoC->getFreeHeap());
-  Serial.flush();
+  SERIAL_FLUSH();
 
   EEPROM_setup();
 
@@ -641,7 +634,7 @@ void setup_CPP(void)
 
   Traffic_setup();
   NMEA_setup();
-  Serial.flush();
+  SERIAL_FLUSH();
 
   SoC->post_init();
 
@@ -692,12 +685,7 @@ void main_loop_CPP(void)
 
   SoC->Button_loop();
 
-#if defined(TAKE_CARE_OF_MILLIS_ROLLOVER)
-  /* restart the device when uptime is more than 47 days */
-  if (millis() > (47 * 24 * 3600 * 1000UL)) {
-    SoC->reset();
-  }
-#endif /* TAKE_CARE_OF_MILLIS_ROLLOVER */
+  Time_loop();
 
   yield();
 }
@@ -720,9 +708,11 @@ void once_per_second_task_CPP(void)
   }
 
   mi = mallinfo();
-  SerialOutput.print(millis() / 1000); SerialOutput.write(' ');
-  SerialOutput.print(i); SerialOutput.write(' ');
-  SerialOutput.println(mi.fordblks);
+  if (!has_portapack) {
+    SerialOutput.print(millis() / 1000); SerialOutput.write(' ');
+    SerialOutput.print(i); SerialOutput.write(' ');
+    SerialOutput.println(mi.fordblks);
+  }
 #endif
 
   for (a = state.aircrafts; a; a = a->next) {

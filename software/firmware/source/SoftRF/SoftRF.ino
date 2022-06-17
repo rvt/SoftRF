@@ -164,15 +164,8 @@ void setup()
 
   SoC->Button_setup();
 
-  if (settings->AircraftID == 0x00)
-  {
-    ThisAircraft.addr = SoC->getChipId() & 0x00FFFFFF;
-  }
-  else
-  {
-    ThisAircraft.addr = settings->AircraftID;
-  }
-  
+  ThisAircraft.addr = SoC->getChipId() & 0x00FFFFFF;
+
   hw_info.rf = RF_setup();
 
   delay(100);

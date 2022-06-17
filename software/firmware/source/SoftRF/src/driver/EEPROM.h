@@ -74,8 +74,10 @@ typedef struct Settings {
     uint8_t  power_save;
 
     int8_t   freq_corr; /* +/-, kHz */
-    uint32_t  AircraftID;
-    
+    uint8_t  resvd2;
+    uint8_t  resvd3;
+    uint8_t  resvd4;
+
     /* Use a key provided by (local) gliding contest organizer */
     uint32_t igc_key[4];
 

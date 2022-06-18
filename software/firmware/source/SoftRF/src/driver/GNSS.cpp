@@ -1172,7 +1172,7 @@ static bool at65_setup()
   Serial_GNSS_Out.write("$PCAS10,3*1F\r\n"); /* load factory defaults */ delay(250);
   //Serial_GNSS_Out.write("$PCAS05,5*1D\r\n"); /* NMEA 4.0 */ delay(250);
   //Serial_GNSS_Out.write("$PCAS05,2*1A\r\n"); /* NMEA 4.1 */ delay(250);
-  Serial_GNSS_Out.write("$PCAS03,1,0,1,1,1,1,0,0,0,0,,,0,0*03\r\n"); /* GGA, GSA, GSV, VTG and RMC */ delay(250);
+  //Serial_GNSS_Out.write("$PCAS03,1,0,1,1,1,1,0,0,0,0,,,0,0*03\r\n"); /* GGA, GSA, GSV, VTG and RMC */ delay(250);
   //Serial_GNSS_Out.write("$PCAS04,1*18\r\n"); /* GPS */ delay(250);
   //Serial_GNSS_Out.write("$PCAS04,5*1C\r\n"); /* GPS + GLONASS */ delay(250);
   //Serial_GNSS_Out.write("$PCAS04,3*1A\r\n"); /* GPS + BEIDOU */ delay(250);

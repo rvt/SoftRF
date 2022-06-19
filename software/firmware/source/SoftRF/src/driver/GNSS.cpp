@@ -16,8 +16,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define STRATUX /* enable for Stratux build */
-
 #if defined(ARDUINO)
 #include <Arduino.h>
 #endif

@@ -107,7 +107,11 @@ void EEPROM_defaults()
 
   eeprom_block.field.settings.nmea_g     = true;
   eeprom_block.field.settings.nmea_p     = false;
-  eeprom_block.field.settings.nmea_l     = true;
+  #if defined(STRATUX)
+    eeprom_block.field.settings.nmea_l     = false;
+  #else
+    eeprom_block.field.settings.nmea_l     = true;
+  #endif
   eeprom_block.field.settings.nmea_s     = true;
 
 #if (ARDUINO_ESP32S2_USB && !defined(USE_USB_HOST)) || \

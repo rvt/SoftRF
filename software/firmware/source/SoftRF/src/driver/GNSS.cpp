@@ -337,8 +337,8 @@ const uint8_t defaultCFG[] PROGMEM = {0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 
 const uint8_t saveCFG[] PROGMEM = {0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03};
 
  /* Stratux Setup: set update rate */
-//const uint8_t setRATE[] PROGMEM = {0xE8, 0x03, 0x01, 0x00, 0x01, 0x00}; /* set to 1Hz */
-const uint8_t setRATE[] PROGMEM = {0xF4, 0x01, 0x01, 0x00, 0x01, 0x00}; /* set to 2Hz */
+const uint8_t setRATE[] PROGMEM = {0xE8, 0x03, 0x01, 0x00, 0x01, 0x00}; /* set to 1Hz */
+//const uint8_t setRATE[] PROGMEM = {0xF4, 0x01, 0x01, 0x00, 0x01, 0x00}; /* set to 2Hz */
 //const uint8_t setRATE[] PROGMEM = {0xC8, 0x00, 0x01, 0x00, 0x01, 0x00}; /* set to 5Hz */
 
 #if defined(USE_GNSS_PSM)
@@ -1168,10 +1168,13 @@ static bool at65_setup()
     Serial_GNSS_Out.write("$PCAS11,6*1B\r\n"); /* Aviation < 2g */     delay(250);
 #else
   //Serial_GNSS_Out.write("$PCAS10,3*1F\r\n"); /* load factory defaults */ delay(250);
-  //Serial_GNSS_Out.write("$PCAS02,1000*2E\r\n"); /* 1Hz update rate */ delay(250);
-  //Serial_GNSS_Out.write("$PCAS03,1,0,1,1,1,1,0,0,0,0,,,0,0*03\r\n"); /* GGA, GLL=0, GSA, GSV, RMC, VTG */ delay(250);
-  Serial_GNSS_Out.write("$PCAS02,500*1A\r\n"); /* 2Hz update rate */ delay(250);
-  Serial_GNSS_Out.write("$PCAS03,1,0,2,2,1,1,0,0,0,0,,,0,0*03\r\n"); /* GGA, GLL=0, GSA, GSV, RMC, VTG */ delay(250);
+  //Serial_GNSS_Out.write("$PCAS01,1*1D\r\n"); /* 9600 baud */ delay(250);
+  //Serial_GNSS_Out.write("$PCAS01,3*1F\r\n"); /* 38400 baud */ delay(250);
+  //Serial_GNSS_Out.write("$PCAS01,5*19\r\n"); /* 115200 baud */ delay(250);
+  Serial_GNSS_Out.write("$PCAS02,1000*2E\r\n"); /* 1Hz update rate */ delay(250);
+  Serial_GNSS_Out.write("$PCAS03,1,0,1,1,1,1,0,0,0,0,,,0,0*03\r\n"); /* GGA, GLL=0, GSA, GSV, RMC, VTG */ delay(250);
+  //Serial_GNSS_Out.write("$PCAS02,500*1A\r\n"); /* 2Hz update rate */ delay(250);
+  //Serial_GNSS_Out.write("$PCAS03,1,0,2,2,1,1,0,0,0,0,,,0,0*03\r\n"); /* GGA, GLL=0, GSA, GSV, RMC, VTG */ delay(250);
   //Serial_GNSS_Out.write("$PCAS04,1*18\r\n"); /* GPS */ delay(250);
   //Serial_GNSS_Out.write("$PCAS04,5*1C\r\n"); /* GPS + GLONASS */ delay(250);
   //Serial_GNSS_Out.write("$PCAS04,3*1A\r\n"); /* GPS + BEIDOU */ delay(250);

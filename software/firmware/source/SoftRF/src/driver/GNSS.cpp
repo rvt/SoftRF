@@ -261,7 +261,7 @@ const gnss_chip_ops_t generic_nmea_ops = {
  /* CFG-MSG */
 
 #if defined(STRATUX)
- /*                               Class ID    DDC   UART1 UART2 USB   I2C   Res */
+ /*                               Class ID    I2C   UART1 UART2 USB   SPI   Res */
 //const uint8_t setGGA[] PROGMEM = {0xF0, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01}; /* GGA is already enabled */
 const uint8_t setGLL[] PROGMEM = {0xF0, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01}; /* disable GLL */
 const uint8_t setGSA[] PROGMEM = {0xF0, 0x02, 0x00, 0x02, 0x00, 0x00, 0x00, 0x01}; /* enable GSA for Stratux */

@@ -1,17 +1,20 @@
 # SoftRF &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [![Join the chat at https://gitter.im/lyusupov/SoftRF](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/lyusupov/SoftRF?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Build Status](https://github.com/lyusupov/SoftRF/actions/workflows/main.yml/badge.svg)](https://github.com/lyusupov/SoftRF/actions/workflows/main.yml "Build Status") 
 DIY, multi-functional, compatible, sub-1 GHz ISM band radio based proximity awareness system for general aviation.
 
-## Modifications in this fork enable SoftRF to work as a proper GPS and Baro source for Stratux:
-- modify u-blox GPS configurations (for T-Beam):
+## Modifications in this fork enable SoftRF to work as a proper GPS and Baro source for Stratux
+
+**IMPORTANT**: All modifications are provided only in the source code so you need to be familiar with Arduino to compile and flash it for your platform
+
+- u-blox GPS configurations (for **T-Beam**):
   - enable GSA, GSV, VTG
   - enable GPS, GALILEO, BEIDOU and SBAS
   - enable NMEA extended
-- modify L76K GPS configuration (for T-Echo)
+- L76K GPS configuration (for **T-Echo**)
   - enable GSA, GSV, VTG
   - enable GPS and BEIDOU
 - disable LK8EX1 and LEGACY traffic messages
 
-IMPORTANT: after compiling/flashing, SoftRF needs to be configured as follows, using the respective method:
+**IMPORTANT**: after compiling/flashing, SoftRF needs to be configured as follows, using the respective method:
 - disable "NMEA sentences - Legacy"
 - when connecting SoftRF via USB with Stratux:
   - set "NMEA output" to USB

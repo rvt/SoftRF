@@ -11,7 +11,7 @@ DIY, multi-functional, compatible, sub-1 GHz ISM band radio based proximity awar
   - enable NMEA extended
 - L76K GPS configuration (for **T-Echo**)
   - enable GSA, GSV, VTG
-  - enable GPS and BEIDOU
+  - enable GPS, GLONASS and BEIDOU
 - disable LK8EX1 and LEGACY traffic messages
 
 **IMPORTANT**: after compiling/flashing, SoftRF needs to be configured as follows, using the respective method:

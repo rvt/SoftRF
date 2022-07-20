@@ -45,6 +45,10 @@
 typedef unsigned long time_t;
 #endif
 
+#ifndef __cplusplus
+#include <stdatomic.h>
+#endif /* __cplusplus */
+
 #define MODE_S_ICAO_CACHE_LEN  64 // Power of two required
 #define MODE_S_LONG_MSG_BYTES  (112/8)
 #define MODE_S_UNIT_FEET       0
@@ -52,6 +56,7 @@ typedef unsigned long time_t;
 
 #define MODE_S_DEFAULT_RATE    2000000
 #define MODE_S_DEFAULT_FREQ    1090000000
+#define MODE_S_DEFAULT_GAIN    999999   // Use default SDR gain
 
 #if !defined(HACKRF_ONE) && !defined(ARDUINO)
 #include <unistd.h>
@@ -113,6 +118,10 @@ struct mode_s_aircraft {
     struct mode_s_aircraft *next; /* Next aircraft in our linked list. */
 };
 
+typedef enum {
+    SDR_NONE, SDR_IFILE, SDR_RTLSDR, SDR_BLADERF, SDR_HACKRF, SDR_LIMESDR, SDR_MIRI
+} sdr_type_t;
+
 // Program state
 typedef struct {
   // Internal state
@@ -126,6 +135,35 @@ typedef struct {
   /* Interactive mode */
   struct mode_s_aircraft *aircrafts;
   int interactive_ttl; /* Interactive mode: TTL before deletion. */
+
+#if defined(ENABLE_RTLSDR)  || defined(ENABLE_HACKRF) || \
+    defined(ENABLE_MIRISDR) || defined(RASPBERRY_PI)
+  pthread_t       reader_thread;
+
+  pthread_mutex_t reader_cpu_mutex;       // mutex protecting reader_cpu_accumulator
+  struct timespec reader_cpu_accumulator; // accumulated CPU time used by the reader thread
+  struct timespec reader_cpu_start;       // start time for the last reader thread CPU measurement
+
+  unsigned trailing_samples;              // extra trailing samples in magnitude buffers
+  double   sample_rate;                   // actual sample rate in use (in hz)
+
+  // Sample conversion
+  int dc_filter;       // should we apply a DC filter?
+
+  // RTLSDR and some other SDRs
+  char *dev_name;
+  float gain;          // value in dB, or MODES_AUTO_GAIN, or MODES_MAX_GAIN
+  int   freq;
+
+  // Configuration
+  sdr_type_t sdr_type; // where are we getting data from?
+
+  float adaptive_range_target;
+
+#ifndef __cplusplus
+  atomic_int exit;     // Exit from the main loop when true (2 = unclean exit)
+#endif /* __cplusplus */
+#endif /* ENABLE_RTLSDR || ENABLE_HACKRF || ENABLE_MIRISDR */
 } mode_s_t;
 
 // The struct we use to store information about a decoded message
@@ -175,6 +213,10 @@ struct mode_s_msg {
 
 typedef void (*mode_s_callback_t)(mode_s_t *self, struct mode_s_msg *mm);
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
 void mode_s_init(mode_s_t *self);
 void mode_s_compute_magnitude_vector(unsigned char *data, mag_t *mag, uint32_t size);
 void mode_s_detect(mode_s_t *self, mag_t *mag, uint32_t maglen, mode_s_callback_t);
@@ -183,4 +225,8 @@ void mode_s_decode(mode_s_t *self, struct mode_s_msg *mm, unsigned char *msg);
 struct mode_s_aircraft* interactiveReceiveData(mode_s_t *self, struct mode_s_msg *mm);
 void interactiveRemoveStaleAircrafts(mode_s_t *self);
 
-#endif
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
+
+#endif /* __MODE_S_DECODER_H */

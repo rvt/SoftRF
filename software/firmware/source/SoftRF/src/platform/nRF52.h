@@ -236,8 +236,9 @@ struct rst_info {
 #define EXCLUDE_CC13XX
 //#define EXCLUDE_TEST_MODE
 #define EXCLUDE_SOFTRF_HEARTBEAT
-//#define EXCLUDE_LK8EX1
-
+#if defined(STRATUX)
+  #define EXCLUDE_LK8EX1
+#endif /* STRATUX */
 #define EXCLUDE_GNSS_UBLOX
 #define EXCLUDE_GNSS_SONY
 #define EXCLUDE_GNSS_MTK

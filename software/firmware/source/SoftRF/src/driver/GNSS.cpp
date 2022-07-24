@@ -260,12 +260,23 @@ const gnss_chip_ops_t generic_nmea_ops = {
 
 #if !defined(EXCLUDE_GNSS_UBLOX)
  /* CFG-MSG */
+
+#if defined(STRATUX)
+ /*                               Class ID    I2C   UART1 UART2 USB   SPI   Res */
+//const uint8_t setGGA[] PROGMEM = {0xF0, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01}; /* GGA is already enabled */
+const uint8_t setGLL[] PROGMEM = {0xF0, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01}; /* disable GLL */
+const uint8_t setGSA[] PROGMEM = {0xF0, 0x02, 0x00, 0x02, 0x00, 0x00, 0x00, 0x01}; /* enable GSA for Stratux */
+const uint8_t setGSV[] PROGMEM = {0xF0, 0x03, 0x00, 0x02, 0x00, 0x00, 0x00, 0x01}; /* enable GSV for Stratux */
+//const uint8_t setRMC[] PROGMEM = {0xF0, 0x04, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01}; /* RMC is already enabled */
+const uint8_t setVTG[] PROGMEM = {0xF0, 0x05, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01}; /* enable VTG for Stratux */
+#else
 const uint8_t setGLL[] PROGMEM = {0xF0, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
 const uint8_t setGSV[] PROGMEM = {0xF0, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
 const uint8_t setVTG[] PROGMEM = {0xF0, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
 #if !defined(NMEA_TCP_SERVICE)
 const uint8_t setGSA[] PROGMEM = {0xF0, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
 #endif
+#endif /* STRATUX */
  /* CFG-PRT */
 uint8_t setBR[] = {0x01, 0x00, 0x00, 0x00, 0xD0, 0x08, 0x00, 0x00, 0x00, 0x96,
                    0x00, 0x00, 0x07, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00};
@@ -290,6 +301,46 @@ const uint8_t factoryUBX[] PROGMEM = { 0xB5, 0x62, 0x06, 0x09, 0x0D, 0x00, 0xFF,
                                        0xFB, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                                        0xFF, 0xFF, 0x00, 0x00, 0x17, 0x2B, 0x7E } ;
 
+ /* Stratux Setup: enable GPS & Glonass for u-blox 6 & 7 */
+const uint8_t setGNSS_U67[] PROGMEM = {0x00, 0x00, 0xFF, 0x04,
+                                       0x00, 0x04, 0xFF, 0x00, 0x01, 0x00, 0x01, 0x01,  /* enable GPS */
+                                       0x01, 0x01, 0x03, 0x00, 0x01, 0x00, 0x01, 0x01,  /* enable SBAS */
+                                       0x05, 0x00, 0x03, 0x00, 0x01, 0x00, 0x01, 0x01,  /* enable QZSS */
+                                       0x06, 0x08, 0xFF, 0x00, 0x00, 0x00, 0x01, 0x01}; /* disable Glonass */
+
+ /* Stratux Setup: enable GPS & Galileo & Beidou for u-blox 8 */
+const uint8_t setGNSS_U8[] PROGMEM = {0x00, 0x00, 0xFF, 0x07,
+                                      0x00, 0x08, 0x10, 0x00, 0x01, 0x00, 0x01, 0x01,  /* enable GPS */
+                                      0x01, 0x01, 0x03, 0x00, 0x01, 0x00, 0x01, 0x01,  /* enable SBAS */
+                                      0x02, 0x08, 0x08, 0x00, 0x01, 0x00, 0x01, 0x01,  /* enable Galileo */
+                                      0x04, 0x00, 0x08, 0x00, 0x00, 0x00, 0x01, 0x01,  /* disable IMES */
+                                      0x03, 0x08, 0x10, 0x00, 0x01, 0x00, 0x01, 0x01,  /* enable Beidou */
+                                      0x05, 0x01, 0x03, 0x00, 0x01, 0x00, 0x01, 0x01,  /* enable QZSS */
+                                      0x06, 0x08, 0x10, 0x00, 0x00, 0x00, 0x01, 0x01}; /* disable Glonass */
+
+ /* Stratux Setup: set NMEA protocol version and numbering for u-blox 6 & 7 */
+const uint8_t setNMEA_U67[] PROGMEM = {0x00, 0x23, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00,  /* NMEA protocol v2.3 extended */
+                                       0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00,
+                                       0x00, 0x00, 0x00, 0x00};
+
+ /* Stratux Setup: set NMEA protocol version and numbering for u-blox 8 */
+const uint8_t setNMEA_U8[] PROGMEM = {0x00, 0x40, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00,  /* NMEA protocol v4.0 extended */
+                                      0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00,
+                                      0x00, 0x00, 0x00, 0x00};
+
+ /* Stratux Setup: configure SBAS */
+const uint8_t setSBAS[] PROGMEM = {0x01, 0x03, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00}; /* disable integrity, enable auto-scan */
+
+ /* Stratux Setup: load default configuration */
+const uint8_t defaultCFG[] PROGMEM = {0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03};
+
+ /* Stratux Setup: save configuration */
+const uint8_t saveCFG[] PROGMEM = {0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03};
+
+ /* Stratux Setup: set update rate */
+const uint8_t setRATE[] PROGMEM = {0xE8, 0x03, 0x01, 0x00, 0x01, 0x00}; /* set to 1Hz */
+//const uint8_t setRATE[] PROGMEM = {0xF4, 0x01, 0x01, 0x00, 0x01, 0x00}; /* set to 2Hz */
+//const uint8_t setRATE[] PROGMEM = {0xC8, 0x00, 0x01, 0x00, 0x01, 0x00}; /* set to 5Hz */
 
 #if defined(USE_GNSS_PSM)
 static bool gnss_psm_active = false;
@@ -383,6 +434,8 @@ static boolean getUBX_ACK(uint8_t cl, uint8_t id) {
   }
 }
 
+static byte ublox_version(); /* forward declaration */
+
 static void setup_UBX()
 {
   uint8_t msglen;
@@ -410,6 +463,52 @@ static void setup_UBX()
   Serial_GNSS_In.flush();
   SoC->swSer_begin(baudrate);
 #endif
+
+#if defined(STRATUX)
+
+  byte version = ublox_version();
+
+  //if ((version == GNSS_MODULE_U6) || (version == GNSS_MODULE_U7) || (version == GNSS_MODULE_U8)) {
+  // msglen = makeUBXCFG(0x06, 0x09, sizeof(defaultCFG), defaultCFG);
+  // sendUBX(GNSSbuf, msglen);
+  // gnss_set_sucess = getUBX_ACK(0x06, 0x09);
+  //}
+
+  if ((version == GNSS_MODULE_U6) || (version == GNSS_MODULE_U7)) {
+    msglen = makeUBXCFG(0x06, 0x3E, sizeof(setGNSS_U67), setGNSS_U67);
+    sendUBX(GNSSbuf, msglen);
+    gnss_set_sucess = getUBX_ACK(0x06, 0x3E);
+
+    msglen = makeUBXCFG(0x06, 0x17, sizeof(setNMEA_U67), setNMEA_U67);
+    sendUBX(GNSSbuf, msglen);
+    gnss_set_sucess = getUBX_ACK(0x06, 0x17);
+  }
+
+  if (version == GNSS_MODULE_U8) {
+    msglen = makeUBXCFG(0x06, 0x3E, sizeof(setGNSS_U8), setGNSS_U8);
+    sendUBX(GNSSbuf, msglen);
+    gnss_set_sucess = getUBX_ACK(0x06, 0x3E);
+  
+    msglen = makeUBXCFG(0x06, 0x17, sizeof(setNMEA_U8), setNMEA_U8);
+    sendUBX(GNSSbuf, msglen);
+    gnss_set_sucess = getUBX_ACK(0x06, 0x17);
+  }
+
+  if ((version == GNSS_MODULE_U6) || (version == GNSS_MODULE_U7) || (version == GNSS_MODULE_U8)) {
+    msglen = makeUBXCFG(0x06, 0x16, sizeof(setSBAS), setSBAS);
+    sendUBX(GNSSbuf, msglen);
+    gnss_set_sucess = getUBX_ACK(0x06, 0x16);
+
+    msglen = makeUBXCFG(0x06, 0x08, sizeof(setRATE), setRATE);
+    sendUBX(GNSSbuf, msglen);
+    gnss_set_sucess = getUBX_ACK(0x06, 0x08);
+
+    //msglen = makeUBXCFG(0x06, 0x09, sizeof(saveCFG), saveCFG);
+    //sendUBX(GNSSbuf, msglen);
+    //gnss_set_sucess = getUBX_ACK(0x06, 0x09);
+  }
+
+#endif /* STRATUX */
 
   GNSS_DEBUG_PRINTLN(F("Airborne <2g navigation mode: "));
 
@@ -795,9 +894,9 @@ static bool sony_setup()
 
   /* GGA + GSA + RMC */
   Serial_GNSS_Out.write("@BSSL 0x25\r\n"); delay(250);
-  /* GPS + GLONASS. This command must be issued at “Idle” mode */
+  /* GPS + GLONASS. This command must be issued at Idle mode */
   Serial_GNSS_Out.write("@GNS 3\r\n");     delay(250);
-  /*  Positioning algorithm. This command must be issued at “Idle” mode */
+  /*  Positioning algorithm. This command must be issued at Idle mode */
   Serial_GNSS_Out.write("@GUSE 0\r\n");    delay(250);
 
 #if SOC_GPIO_PIN_GNSS_PPS != SOC_UNUSED_PIN
@@ -1061,16 +1160,31 @@ static bool at65_setup()
   delay(250);
 #endif
 
-  /* Assume that we deal with fake NEO module (AT6558 based) */
-  Serial_GNSS_Out.write("$PCAS04,5*1C\r\n"); /* GPS + GLONASS */     delay(250);
-#if defined(NMEA_TCP_SERVICE)
-  /* GGA,RMC and GSA */
-  Serial_GNSS_Out.write("$PCAS03,1,0,1,0,1,0,0,0,0,0,,,0,0*03\r\n"); delay(250);
+#if !defined(STRATUX)
+    /* Assume that we deal with fake NEO module (AT6558 based) */
+    Serial_GNSS_Out.write("$PCAS04,5*1C\r\n"); /* GPS + GLONASS */     delay(250);
+  #if defined(NMEA_TCP_SERVICE)
+    /* GGA,RMC and GSA */
+    Serial_GNSS_Out.write("$PCAS03,1,0,1,0,1,0,0,0,0,0,,,0,0*03\r\n"); delay(250);
+  #else
+    /* GGA and RMC */
+    Serial_GNSS_Out.write("$PCAS03,1,0,0,0,1,0,0,0,0,0,,,0,0*02\r\n"); delay(250);
+  #endif
+    Serial_GNSS_Out.write("$PCAS11,6*1B\r\n"); /* Aviation < 2g */     delay(250);
 #else
-  /* GGA and RMC */
-  Serial_GNSS_Out.write("$PCAS03,1,0,0,0,1,0,0,0,0,0,,,0,0*02\r\n"); delay(250);
-#endif
-  Serial_GNSS_Out.write("$PCAS11,6*1B\r\n"); /* Aviation < 2g */     delay(250);
+  //Serial_GNSS_Out.write("$PCAS10,3*1F\r\n"); /* load factory defaults */ delay(250);
+  //Serial_GNSS_Out.write("$PCAS01,1*1D\r\n"); /* 9600 baud */ delay(250);
+  //Serial_GNSS_Out.write("$PCAS01,3*1F\r\n"); /* 38400 baud */ delay(250);
+  //Serial_GNSS_Out.write("$PCAS01,5*19\r\n"); /* 115200 baud */ delay(250);
+  Serial_GNSS_Out.write("$PCAS02,1000*2E\r\n"); /* 1Hz update rate */ delay(250);
+  Serial_GNSS_Out.write("$PCAS03,1,0,1,1,1,1,0,0,0,0,,,0,0*03\r\n"); /* GGA, GLL=0, GSA, GSV, RMC, VTG */ delay(250);
+  //Serial_GNSS_Out.write("$PCAS02,500*1A\r\n"); /* 2Hz update rate */ delay(250);
+  //Serial_GNSS_Out.write("$PCAS03,1,0,2,2,1,1,0,0,0,0,,,0,0*03\r\n"); /* GGA, GLL=0, GSA, GSV, RMC, VTG */ delay(250);
+  //Serial_GNSS_Out.write("$PCAS04,1*18\r\n"); /* GPS */ delay(250);
+  //Serial_GNSS_Out.write("$PCAS04,5*1C\r\n"); /* GPS + GLONASS */ delay(250);
+  //Serial_GNSS_Out.write("$PCAS04,3*1A\r\n"); /* GPS + BEIDOU */ delay(250);
+  Serial_GNSS_Out.write("$PCAS04,7*1E\r\n"); /* GPS + GLONASS + BEIDOU */ delay(250);
+#endif /* STRATUX */
 
   return true;
 }
@@ -1400,7 +1514,22 @@ void PickGNSSFix()
           }
           else
 #endif
-          {
+          { 
+            // GNSS_MODULE_AT65 does not provide millisecond accuracy for GNRMC GNGGA that is required for stratux.
+            // We take the internal milli() and use the millies() value for that
+            // Unfortunatly we are now 1 second un-accurate.
+            if (hw_info.gnss == GNSS_MODULE_AT65 && 
+                strncmp((char *) &GNSSbuf[ndx+3], "GGA,,", strlen("GGA,,")) == 0 ||
+                strncmp((char *) &GNSSbuf[ndx+3], "RMC,,", strlen("RMC,,")) == 0 ) {
+                  // Set new millis
+                  char buff[4];
+                  itoa(millis()%1000, &buff[0], 10);
+                  strncpy((char *) &GNSSbuf[ndx+14], &buff[0], 3);
+                  // Append CRC
+                  GNSSbuf[ndx+write_size-3] = 0x00;
+                  NMEA_add_checksum((char *) &GNSSbuf[ndx], sizeof(GNSSbuf) - strlen((char *)&GNSSbuf[ndx]) - ndx);
+            }
+
             NMEA_Out(settings->nmea_out, &GNSSbuf[ndx], write_size, true);
           }
 

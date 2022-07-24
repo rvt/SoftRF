@@ -1514,7 +1514,18 @@ void PickGNSSFix()
           }
           else
 #endif
-          {
+          { 
+            // GNSS_MODULE_AT65 does not provide millisecond accuracy for GNRMC GNGGA that is required for stratux.
+            // We take the internal milli() and use the millies() value for that
+            // Unfortunatly we ar enow 1 second un-accurate.
+            if (hw_info.gnss == GNSS_MODULE_AT65 && 
+                (strncmp((char *) &GNSSbuf[ndx+3], "GGA,", strlen("GGA,")) == 0 ||
+                 strncmp((char *) &GNSSbuf[ndx+3], "RMC,", strlen("RMC,")) == 0)) {
+                  char buff[3];
+                  itoa(millis()%1000, &buff[0], 10);
+                  strncpy((char *) &GNSSbuf[ndx+14], &buff[0], 3);
+            }
+
             NMEA_Out(settings->nmea_out, &GNSSbuf[ndx], write_size, true);
           }
 

@@ -1521,9 +1521,13 @@ void PickGNSSFix()
             if (hw_info.gnss == GNSS_MODULE_AT65 && 
                 (strncmp((char *) &GNSSbuf[ndx+3], "GGA,", strlen("GGA,")) == 0 ||
                  strncmp((char *) &GNSSbuf[ndx+3], "RMC,", strlen("RMC,")) == 0)) {
-                  char buff[3];
+                  // Set new millis
+                  char buff[4];
                   itoa(millis()%1000, &buff[0], 10);
                   strncpy((char *) &GNSSbuf[ndx+14], &buff[0], 3);
+                  // Append CRC
+                  GNSSbuf[ndx+write_size-3] = 0x00;
+                  NMEA_add_checksum((char *) &GNSSbuf[ndx], sizeof(GNSSbuf) - strlen((char *)&GNSSbuf[ndx]) - ndx);
             }
 
             NMEA_Out(settings->nmea_out, &GNSSbuf[ndx], write_size, true);

@@ -488,7 +488,7 @@ static void setup_UBX()
     msglen = makeUBXCFG(0x06, 0x3E, sizeof(setGNSS_U8), setGNSS_U8);
     sendUBX(GNSSbuf, msglen);
     gnss_set_sucess = getUBX_ACK(0x06, 0x3E);
-  
+
     msglen = makeUBXCFG(0x06, 0x17, sizeof(setNMEA_U8), setNMEA_U8);
     sendUBX(GNSSbuf, msglen);
     gnss_set_sucess = getUBX_ACK(0x06, 0x17);
@@ -1514,22 +1514,29 @@ void PickGNSSFix()
           }
           else
 #endif
-          { 
+
+          {
+
             // GNSS_MODULE_AT65 does not provide millisecond accuracy for GNRMC GNGGA that is required for stratux.
             // We take the internal milli() and use the millies() value for that
             // Unfortunatly we are now 1 second un-accurate.
-            if (hw_info.gnss == GNSS_MODULE_AT65 && 
+            // From a chect:
+            // for at least some ublox GPS receivers according to a quick google search the millisecond value will be 0: 
+            // "The millisecond value is correct. When a position fix is achieved, the system adjusts to compute position 
+            // and velocity at top of the second."
+#if defined(STRATUX)
+            if (hw_info.gnss == GNSS_MODULE_AT65 &&
                 strncmp((char *) &GNSSbuf[ndx+3], "GGA,,", strlen("GGA,,")) == 0 ||
                 strncmp((char *) &GNSSbuf[ndx+3], "RMC,,", strlen("RMC,,")) == 0 ) {
                   // Set new millis
                   char buff[4];
-                  itoa(millis()%1000, &buff[0], 10);
+                  snprintf_P(buff, sizeof(buff), PSTR("%02X\r\n"), millis()%1000);
                   strncpy((char *) &GNSSbuf[ndx+14], &buff[0], 3);
                   // Append CRC
                   GNSSbuf[ndx+write_size-3] = 0x00;
                   NMEA_add_checksum((char *) &GNSSbuf[ndx], sizeof(GNSSbuf) - strlen((char *)&GNSSbuf[ndx]) - ndx);
             }
-
+#endif /* STRATUX */
             NMEA_Out(settings->nmea_out, &GNSSbuf[ndx], write_size, true);
           }
 

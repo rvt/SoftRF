@@ -1516,25 +1516,21 @@ void PickGNSSFix()
 #endif
 
           {
-
-            // GNSS_MODULE_AT65 does not provide millisecond accuracy for GNRMC GNGGA that is required for stratux.
-            // We take the internal milli() and use the millies() value for that
-            // Unfortunatly we are now 1 second un-accurate.
-            // From a chect:
-            // for at least some ublox GPS receivers according to a quick google search the millisecond value will be 0: 
-            // "The millisecond value is correct. When a position fix is achieved, the system adjusts to compute position 
-            // and velocity at top of the second."
+            // GNSS_MODULE_AT65 does not provide millisecond accuracy for GNRMC/GNGGA that is required for stratux.
+            // to provide stratux with some sence of time we send right before GGA a PSOFT that will stratux
+            // use to notice start of the next second because. 
+            // according to doc, AT65 will send block's of data starting each second, starting with GGA so we key on that..
+            // Note: For position data the GPS recalculates the location as if it where at second 000
 #if defined(STRATUX)
-            if (hw_info.gnss == GNSS_MODULE_AT65 &&
-                strncmp((char *) &GNSSbuf[ndx+3], "GGA,,", strlen("GGA,,")) == 0 ||
-                strncmp((char *) &GNSSbuf[ndx+3], "RMC,,", strlen("RMC,,")) == 0 ) {
-                  // Set new millis
-                  char buff[4];
-                  snprintf_P(buff, sizeof(buff), PSTR("%02X\r\n"), millis()%1000);
-                  strncpy((char *) &GNSSbuf[ndx+14], &buff[0], 3);
-                  // Append CRC
-                  GNSSbuf[ndx+write_size-3] = 0x00;
-                  NMEA_add_checksum((char *) &GNSSbuf[ndx], sizeof(GNSSbuf) - strlen((char *)&GNSSbuf[ndx]) - ndx);
+            if (hw_info.gnss == GNSS_MODULE_AT65 &&   
+                strncmp((char *) &GNSSbuf[ndx+3], "GGA", strlen("GGA")) == 0) {
+                char sz[40];
+                snprintf_P(sz, sizeof(sz),PSTR("$PSOFT,%02d%02d%02d.000,%02d%02d%02d,%s*"),
+                gnss.time.hour(), gnss.time.minute(), gnss.time.second(), 
+                gnss.date.day(), gnss.date.month(), gnss.date.year() - 2000,
+                GNSS_name[hw_info.gnss]);
+                NMEA_add_checksum(sz, sizeof(sz) - strlen(sz));
+                NMEA_Out(settings->nmea_out, (byte *)sz, strlen(sz), false);
             }
 #endif /* STRATUX */
             NMEA_Out(settings->nmea_out, &GNSSbuf[ndx], write_size, true);

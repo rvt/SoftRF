@@ -33,6 +33,8 @@
 #include <soc/adc_channel.h>
 #include <flashchips.h>
 #include <axp20x.h>
+#define  XPOWERS_CHIP_AXP2102
+#include <XPowersLib.h>
 
 #include "../system/SoC.h"
 #include "../driver/Sound.h"
@@ -117,7 +119,8 @@ void TFT_backlight_on()
 }
 #endif /* USE_TFT */
 
-AXP20X_Class axp;
+AXP20X_Class axp_xxx;
+XPowersPMU   axp_2xxx;
 
 static int esp32_board = ESP32_DEVKIT; /* default */
 
@@ -270,26 +273,26 @@ static void ESP32_setup()
     bool has_axp202 = (Wire1.endTransmission() == 0);
     if (has_axp202) {
 
-      axp.begin(Wire1, AXP202_SLAVE_ADDRESS);
+      axp_xxx.begin(Wire1, AXP202_SLAVE_ADDRESS);
 
-      axp.enableIRQ(AXP202_ALL_IRQ, AXP202_OFF);
-      axp.adc1Enable(0xFF, AXP202_OFF);
+      axp_xxx.enableIRQ(AXP202_ALL_IRQ, AXP202_OFF);
+      axp_xxx.adc1Enable(0xFF, AXP202_OFF);
 
-      axp.setChgLEDMode(AXP20X_LED_LOW_LEVEL);
+      axp_xxx.setChgLEDMode(AXP20X_LED_LOW_LEVEL);
 
-      axp.setPowerOutPut(AXP202_LDO2, AXP202_ON); // BL
-      axp.setPowerOutPut(AXP202_LDO3, AXP202_ON); // S76G (MCU + LoRa)
-      axp.setLDO4Voltage(AXP202_LDO4_1800MV);
-      axp.setPowerOutPut(AXP202_LDO4, AXP202_ON); // S76G (Sony GNSS)
+      axp_xxx.setPowerOutPut(AXP202_LDO2, AXP202_ON); // BL
+      axp_xxx.setPowerOutPut(AXP202_LDO3, AXP202_ON); // S76G (MCU + LoRa)
+      axp_xxx.setLDO4Voltage(AXP202_LDO4_1800MV);
+      axp_xxx.setPowerOutPut(AXP202_LDO4, AXP202_ON); // S76G (Sony GNSS)
 
       pinMode(SOC_GPIO_PIN_TWATCH_PMU_IRQ, INPUT_PULLUP);
 
       attachInterrupt(digitalPinToInterrupt(SOC_GPIO_PIN_TWATCH_PMU_IRQ),
                       ESP32_PMU_Interrupt_handler, FALLING);
 
-      axp.adc1Enable(AXP202_BATT_VOL_ADC1, AXP202_ON);
-      axp.enableIRQ(AXP202_PEK_LONGPRESS_IRQ | AXP202_PEK_SHORTPRESS_IRQ, true);
-      axp.clearIRQ();
+      axp_xxx.adc1Enable(AXP202_BATT_VOL_ADC1, AXP202_ON);
+      axp_xxx.enableIRQ(AXP202_PEK_LONGPRESS_IRQ | AXP202_PEK_SHORTPRESS_IRQ, true);
+      axp_xxx.clearIRQ();
     } else {
       WIRE_FINI(Wire1);
     }
@@ -303,30 +306,42 @@ static void ESP32_setup()
 
       hw_info.revision = 8;
 
-      axp.begin(Wire1, AXP192_SLAVE_ADDRESS);
+      axp_xxx.begin(Wire1, AXP192_SLAVE_ADDRESS);
 
-      axp.setChgLEDMode(AXP20X_LED_LOW_LEVEL);
+      axp_xxx.setChgLEDMode(AXP20X_LED_LOW_LEVEL);
 
-      axp.setPowerOutPut(AXP192_LDO2,  AXP202_ON);
-      axp.setPowerOutPut(AXP192_LDO3,  AXP202_ON);
-      axp.setPowerOutPut(AXP192_DCDC1, AXP202_ON);
-      axp.setPowerOutPut(AXP192_DCDC2, AXP202_ON); // NC
-      axp.setPowerOutPut(AXP192_EXTEN, AXP202_ON);
+      axp_xxx.setPowerOutPut(AXP192_LDO2,  AXP202_ON);
+      axp_xxx.setPowerOutPut(AXP192_LDO3,  AXP202_ON);
+      axp_xxx.setPowerOutPut(AXP192_DCDC1, AXP202_ON);
+      axp_xxx.setPowerOutPut(AXP192_DCDC2, AXP202_ON); // NC
+      axp_xxx.setPowerOutPut(AXP192_EXTEN, AXP202_ON);
 
-      axp.setDCDC1Voltage(3300); //       AXP192 power-on value: 3300
-      axp.setLDO2Voltage (3300); // LoRa, AXP192 power-on value: 3300
-      axp.setLDO3Voltage (3000); // GPS,  AXP192 power-on value: 2800
+      axp_xxx.setDCDC1Voltage(3300); //       AXP192 power-on value: 3300
+      axp_xxx.setLDO2Voltage (3300); // LoRa, AXP192 power-on value: 3300
+      axp_xxx.setLDO3Voltage (3000); // GPS,  AXP192 power-on value: 2800
 
       pinMode(SOC_GPIO_PIN_TBEAM_V08_PMU_IRQ, INPUT /* INPUT_PULLUP */);
 
       attachInterrupt(digitalPinToInterrupt(SOC_GPIO_PIN_TBEAM_V08_PMU_IRQ),
                       ESP32_PMU_Interrupt_handler, FALLING);
 
-      axp.enableIRQ(AXP202_PEK_LONGPRESS_IRQ | AXP202_PEK_SHORTPRESS_IRQ, true);
-      axp.clearIRQ();
+      axp_xxx.enableIRQ(AXP202_PEK_LONGPRESS_IRQ | AXP202_PEK_SHORTPRESS_IRQ, true);
+      axp_xxx.clearIRQ();
     } else {
-      WIRE_FINI(Wire1);
-      hw_info.revision = 2;
+      Wire1.beginTransmission(AXP2101_SLAVE_ADDRESS);
+      bool has_axp2101 = (Wire1.endTransmission() == 0);
+      if (has_axp2101) {
+
+        /* axp_2xxx.begin(Wire1, AXP2101_SLAVE_ADDRESS,
+                       TTGO_V2_OLED_PIN_SDA, TTGO_V2_OLED_PIN_SCL); */
+
+        /* TBD */
+
+        /* hw_info.revision = 12 */;
+      } else {
+        WIRE_FINI(Wire1);
+        hw_info.revision = 2;
+      }
     }
     lmic_pins.rst  = SOC_GPIO_PIN_TBEAM_RF_RST_V05;
     lmic_pins.busy = SOC_GPIO_PIN_TBEAM_RF_BUSY_V08;
@@ -370,6 +385,80 @@ static void ESP32_setup()
                        SOC_GPIO_PIN_S3_CONS_RX,
                        SOC_GPIO_PIN_S3_CONS_TX);
 #endif /* ARDUINO_USB_CDC_ON_BOOT */
+
+    Wire1.begin(SOC_GPIO_PIN_S3_OLED_SDA , SOC_GPIO_PIN_S3_OLED_SCL);
+    Wire1.beginTransmission(AXP2101_SLAVE_ADDRESS);
+    bool has_axp2101 = (Wire1.endTransmission() == 0);
+    WIRE_FINI(Wire1);
+
+    if (has_axp2101) {
+
+      axp_2xxx.begin(Wire1, AXP2101_SLAVE_ADDRESS,
+                     SOC_GPIO_PIN_S3_OLED_SDA, SOC_GPIO_PIN_S3_OLED_SCL);
+
+      // Set the minimum system operating voltage inside the PMU,
+      // below this value will shut down the PMU
+      axp_2xxx.setMinSystemVoltage(XPOWERS_VSYS_VOL_4V5);
+
+      // Set the minimum common working voltage of the PMU VBUS input,
+      // below this value will turn off the PMU
+      axp_2xxx.setVbusVoltageLimit(XPOWERS_VBUS_VOL_LIM_4V36);
+
+      // Set the maximum current of the PMU VBUS input,
+      // higher than this value will turn off the PMU
+      axp_2xxx.setVbusCurrentLimit(XPOWERS_VBUS_CUR_LIM_1500MA);
+
+      // DCDC1 1500~3400mV, IMAX=2A
+      axp_2xxx.setDC1Voltage(3300);
+
+      // DCDC2 500~1200mV, 1220~1540mV, IMAX=2A;
+      axp_2xxx.setDC2Voltage(1000);
+
+      // DCDC3 500~1200mV, 1220~1540mV, 1600~3400mV,IMAX = 2A;
+      axp_2xxx.setDC3Voltage(3300);
+
+      // DCDC4: 500~1200mV, 1220~1840mV, IMAX = 1.5A;
+      axp_2xxx.setDC4Voltage(1000);
+
+      // DCDC5 500~1200V, 1220~1540V, 1600~3400mV,IMAX=2A;
+      axp_2xxx.setDC5Voltage(3300);
+
+      // ALDO 500~3500V, 100mV/step, IMAX=300mA
+      axp_2xxx.setALDO1Voltage(3300);
+      axp_2xxx.setALDO2Voltage(3300);
+      axp_2xxx.setALDO3Voltage(3300);
+      axp_2xxx.setALDO4Voltage(3300);
+
+      // BLDO 500~3500V, 100mV/step,IMAX=300mA
+      axp_2xxx.setBLDO1Voltage(3300);
+      axp_2xxx.setBLDO2Voltage(3300);
+
+      // CPUSLDO 500~1400mV, IMAX=30mA
+      axp_2xxx.setCPUSLDOVoltage(1000);
+
+      // DLDO1/2: analog LDO or power switch, 500~3300mV / 500~1400mV, IMAX = 300mA
+      axp_2xxx.setDLDO1Voltage(3300);
+      axp_2xxx.setDLDO2Voltage(3300);
+
+      // axp_2xxx.enableDC1();
+      axp_2xxx.enableDC2();
+#if 0 /* TBD */
+      axp_2xxx.enableDC3();
+      axp_2xxx.enableDC4();
+      axp_2xxx.enableDC5();
+#endif
+      axp_2xxx.enableALDO1();
+      axp_2xxx.enableALDO2();
+#if 0 /* TBD */
+      axp_2xxx.enableALDO3();
+      axp_2xxx.enableALDO4();
+      axp_2xxx.enableBLDO1();
+      axp_2xxx.enableBLDO2();
+      axp_2xxx.enableCPUSLDO();
+      axp_2xxx.enableDLDO1();
+      axp_2xxx.enableDLDO2();
+#endif
+    }
 
     /* uSD-SPI init */
     uSD_SPI.begin(SOC_GPIO_PIN_S3_SD_SCK,
@@ -489,16 +578,16 @@ static void ESP32_loop()
 
     if (is_irq) {
 
-      if (axp.readIRQ() == AXP_PASS) {
+      if (axp_xxx.readIRQ() == AXP_PASS) {
 
-        if (axp.isPEKLongtPressIRQ()) {
+        if (axp_xxx.isPEKLongtPressIRQ()) {
           down = true;
 #if 0
           Serial.println(F("Long press IRQ"));
           Serial.flush();
 #endif
         }
-        if (axp.isPEKShortPressIRQ()) {
+        if (axp_xxx.isPEKShortPressIRQ()) {
 #if 0
           Serial.println(F("Short press IRQ"));
           Serial.flush();
@@ -508,7 +597,7 @@ static void ESP32_loop()
 #endif
         }
 
-        axp.clearIRQ();
+        axp_xxx.clearIRQ();
       }
 
       portENTER_CRITICAL_ISR(&PMU_mutex);
@@ -522,9 +611,9 @@ static void ESP32_loop()
 
     if (isTimeToBattery()) {
       if (Battery_voltage() > Battery_threshold()) {
-        axp.setChgLEDMode(AXP20X_LED_LOW_LEVEL);
+        axp_xxx.setChgLEDMode(AXP20X_LED_LOW_LEVEL);
       } else {
-        axp.setChgLEDMode(AXP20X_LED_BLINK_1HZ);
+        axp_xxx.setChgLEDMode(AXP20X_LED_BLINK_1HZ);
       }
     }
   }
@@ -542,11 +631,11 @@ static void ESP32_fini(int reason)
 
   if (hw_info.model == SOFTRF_MODEL_SKYWATCH) {
 
-    axp.setChgLEDMode(AXP20X_LED_OFF);
+    axp_xxx.setChgLEDMode(AXP20X_LED_OFF);
 
-    axp.setPowerOutPut(AXP202_LDO2, AXP202_OFF); // BL
-    axp.setPowerOutPut(AXP202_LDO4, AXP202_OFF); // S76G (Sony GNSS)
-    axp.setPowerOutPut(AXP202_LDO3, AXP202_OFF); // S76G (MCU + LoRa)
+    axp_xxx.setPowerOutPut(AXP202_LDO2, AXP202_OFF); // BL
+    axp_xxx.setPowerOutPut(AXP202_LDO4, AXP202_OFF); // S76G (Sony GNSS)
+    axp_xxx.setPowerOutPut(AXP202_LDO3, AXP202_OFF); // S76G (MCU + LoRa)
 
     delay(20);
 
@@ -556,7 +645,7 @@ static void ESP32_fini(int reason)
   } else if (hw_info.model    == SOFTRF_MODEL_PRIME_MK2 &&
              hw_info.revision == 8) {
 
-    axp.setChgLEDMode(AXP20X_LED_OFF);
+    axp_xxx.setChgLEDMode(AXP20X_LED_OFF);
 
 #if PMK2_SLEEP_MODE == 2
     int ret;
@@ -564,7 +653,7 @@ static void ESP32_fini(int reason)
     do {
         // In order to ensure that it is set correctly,
         // the loop waits for it to return the correct return value
-        ret = axp.setSleep();
+        ret = axp_xxx.setSleep();
         delay(500);
     } while (ret != AXP_PASS) ;
 
@@ -576,18 +665,18 @@ static void ESP32_fini(int reason)
 
 #endif /* PMK2_SLEEP_MODE */
 
-    axp.setPowerOutPut(AXP192_LDO2,  AXP202_OFF);
-    axp.setPowerOutPut(AXP192_LDO3,  AXP202_OFF);
-    axp.setPowerOutPut(AXP192_DCDC2, AXP202_OFF);
+    axp_xxx.setPowerOutPut(AXP192_LDO2,  AXP202_OFF);
+    axp_xxx.setPowerOutPut(AXP192_LDO3,  AXP202_OFF);
+    axp_xxx.setPowerOutPut(AXP192_DCDC2, AXP202_OFF);
 
     /* workaround against AXP I2C access blocking by 'noname' OLED */
 #if defined(USE_OLED)
     if (u8x8 == NULL)
 #endif /* USE_OLED */
     {
-      axp.setPowerOutPut(AXP192_DCDC1, AXP202_OFF);
+      axp_xxx.setPowerOutPut(AXP192_DCDC1, AXP202_OFF);
     }
-    axp.setPowerOutPut(AXP192_EXTEN, AXP202_OFF);
+    axp_xxx.setPowerOutPut(AXP192_EXTEN, AXP202_OFF);
 
     delay(20);
 
@@ -604,7 +693,7 @@ static void ESP32_fini(int reason)
                                  ESP_EXT1_WAKEUP_ALL_LOW);
 #elif PMK2_SLEEP_MODE == 2
     // Cut MCU power off, PMU remains in sleep until wakeup by PEK button press
-    axp.setPowerOutPut(AXP192_DCDC3, AXP202_OFF);
+    axp_xxx.setPowerOutPut(AXP192_DCDC3, AXP202_OFF);
 #else
     /*
      * Complete power off
@@ -613,7 +702,7 @@ static void ESP32_fini(int reason)
      * - press and hold PWR button for 1-2 seconds then release, or
      * - cycle micro-USB power
      */
-    axp.shutdown();
+    axp_xxx.shutdown();
 #endif /* PMK2_SLEEP_MODE */
   } else if (esp32_board == ESP32_S2_T8_V1_1) {
     pinMode(SOC_GPIO_PIN_T8_S2_PWR_EN, INPUT);
@@ -1645,8 +1734,8 @@ static float ESP32_Battery_param(uint8_t param)
          hw_info.model    == SOFTRF_MODEL_SKYWATCH) {
 
       /* T-Beam v08 and T-Watch have PMU */
-      if (axp.isBatteryConnect()) {
-        voltage = axp.getBattVoltage();
+      if (axp_xxx.isBatteryConnect()) {
+        voltage = axp_xxx.getBattVoltage();
       }
     } else {
       voltage = (float) read_voltage();

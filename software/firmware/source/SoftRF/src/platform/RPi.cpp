@@ -770,7 +770,8 @@ void normal_loop()
 
     if (isTimeToExport()) {
 
-#if defined(ENABLE_RTLSDR) || defined(ENABLE_HACKRF) || defined(ENABLE_MIRISDR)
+#if defined(ENABLE_D1090_INPUT) || \
+    defined(ENABLE_RTLSDR) || defined(ENABLE_HACKRF) || defined(ENABLE_MIRISDR)
   struct mode_s_aircraft *a;
   int i = 0;
 
@@ -779,50 +780,8 @@ void normal_loop()
         abs((long) (a->even_cprtime - a->odd_cprtime)) <= MODE_S_INTERACTIVE_TTL * 1000 ) {
       if (es1090_decode(a, &ThisAircraft, &fo)) {
         memset(fo.raw, 0, sizeof(fo.raw));
-
         Traffic_Update(&fo);
-
-        for (i=0; i < MAX_TRACKING_OBJECTS; i++) {
-          if (Container[i].addr == fo.addr) {
-            uint8_t alert_bak = Container[i].alert;
-            Container[i] = fo;
-            Container[i].alert = alert_bak;
-            break;
-          }
-        }
-        if (i < MAX_TRACKING_OBJECTS) continue;
-
-        int max_dist_ndx = 0;
-        int min_level_ndx = 0;
-
-        for (i=0; i < MAX_TRACKING_OBJECTS; i++) {
-          if (now() - Container[i].timestamp > ENTRY_EXPIRATION_TIME) {
-            Container[i] = fo;
-            break;
-          }
-#if !defined(EXCLUDE_TRAFFIC_FILTER_EXTENSION)
-          if (Container[i].distance > Container[max_dist_ndx].distance) {
-            max_dist_ndx = i;
-          }
-          if (Container[i].alarm_level < Container[min_level_ndx].alarm_level) {
-            min_level_ndx = i;
-          }
-#endif /* EXCLUDE_TRAFFIC_FILTER_EXTENSION */
-        }
-        if (i < MAX_TRACKING_OBJECTS) continue;
-
-#if !defined(EXCLUDE_TRAFFIC_FILTER_EXTENSION)
-        if (fo.alarm_level > Container[min_level_ndx].alarm_level) {
-          Container[min_level_ndx] = fo;
-          continue;
-        }
-
-        if (fo.distance    <  Container[max_dist_ndx].distance &&
-            fo.alarm_level >= Container[max_dist_ndx].alarm_level) {
-          Container[max_dist_ndx] = fo;
-          continue;
-        }
-#endif /* EXCLUDE_TRAFFIC_FILTER_EXTENSION */
+        Traffic_Add(&fo);
       }
     }
   }
@@ -1076,8 +1035,9 @@ int main()
   Serial.println(F("Copyright (C) 2015-2022 Linar Yusupov. All rights reserved."));
   Serial.flush();
 
-#if defined(ENABLE_RTLSDR) || defined(ENABLE_HACKRF) || defined(ENABLE_MIRISDR)
   mode_s_init(&state);
+
+#if defined(ENABLE_RTLSDR) || defined(ENABLE_HACKRF) || defined(ENABLE_MIRISDR)
   sdrInitConfig();
 
   // Allocate the various buffers used by Modes

@@ -161,6 +161,7 @@ typedef struct hardware_info {
     byte  storage;
     byte  rtc;
     byte  imu;
+    byte  pmu;
 } hardware_info_t;
 
 typedef struct IODev_ops_struct {

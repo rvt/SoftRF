@@ -38,7 +38,7 @@
  *   EasyLink library is developed by Robert Wessels and Tony Cave
  *   Dump978 library is developed by Oliver Jowett
  *   FEC library is developed by Phil Karn
- *   AXP202X library is developed by Lewis He
+ *   AXP20X and XPowersLib libraries are developed by Lewis He
  *   Arduino Core for STM32 is developed by Frederic Pillon
  *   TFT library is developed by Bodmer
  *   STM32duino Low Power and RTC libraries are developed by Wi6Labs
@@ -126,6 +126,7 @@ hardware_info_t hw_info = {
   .storage  = STORAGE_NONE,
   .rtc      = RTC_NONE,
   .imu      = IMU_NONE,
+  .pmu      = PMU_NONE,
 };
 
 unsigned long LEDTimeMarker = 0;
@@ -428,10 +429,8 @@ void normal()
   if (isTimeToExport()) {
     NMEA_Export();
     GDL90_Export();
+    D1090_Export();
 
-    if (isValidFix()) {
-      D1090_Export();
-    }
     ExportTimeMarker = millis();
   }
 

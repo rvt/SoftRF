@@ -138,7 +138,8 @@ hardware_info_t hw_info = {
   .display  = DISPLAY_NONE,
   .storage  = STORAGE_NONE,
   .rtc      = RTC_NONE,
-  .imu      = IMU_NONE
+  .imu      = IMU_NONE,
+  .pmu      = PMU_NONE,
 };
 
 #define isTimeToExport() (millis() - ExportTimeMarker > 1000)
@@ -770,30 +771,11 @@ void normal_loop()
 
     if (isTimeToExport()) {
 
-#if defined(ENABLE_D1090_INPUT) || \
-    defined(ENABLE_RTLSDR) || defined(ENABLE_HACKRF) || defined(ENABLE_MIRISDR)
-  struct mode_s_aircraft *a;
-  int i = 0;
-
-  for (a = state.aircrafts; a; a = a->next) {
-    if (a->even_cprtime && a->odd_cprtime &&
-        abs((long) (a->even_cprtime - a->odd_cprtime)) <= MODE_S_INTERACTIVE_TTL * 1000 ) {
-      if (es1090_decode(a, &ThisAircraft, &fo)) {
-        memset(fo.raw, 0, sizeof(fo.raw));
-        Traffic_Update(&fo);
-        Traffic_Add(&fo);
-      }
-    }
-  }
-
-  interactiveRemoveStaleAircrafts(&state);
-#endif /* ENABLE_RTLSDR || ENABLE_HACKRF || ENABLE_MIRISDR */
-
       NMEA_Export();
+      GDL90_Export();
+      D1090_Export();
 
       if (isValidFix()) {
-        GDL90_Export();
-        D1090_Export();
         JSON_Export();
       }
       ExportTimeMarker = millis();

@@ -141,14 +141,24 @@ bool EPD_setup(bool splash_screen)
 
   rval = display->epd2.probe();
 
-  EPD_view_mode = ui->vmode;
-
   EPD_status_setup();
   EPD_radar_setup();
   EPD_text_setup();
   EPD_baro_setup();
-  EPD_imu_setup();
   EPD_time_setup();
+  EPD_imu_setup();
+
+  EPD_view_mode = ui->vmode;
+  if (EPD_pages_mask & (1 << EPD_view_mode) == 0) {
+    for (int i=0; i < VIEW_MODES_COUNT; i++) {
+      int next_view_mode = (EPD_view_mode + i) % VIEW_MODES_COUNT;
+      if ((next_view_mode != EPD_view_mode) &&
+          (EPD_pages_mask & (1 << next_view_mode))) {
+        EPD_view_mode = next_view_mode;
+        break;
+      }
+    }
+  }
 
   switch (ui->aghost)
   {
@@ -446,11 +456,11 @@ void EPD_loop()
       case VIEW_MODE_BARO:
         EPD_baro_loop();
         break;
-      case VIEW_MODE_IMU:
-        EPD_imu_loop();
-        break;
       case VIEW_MODE_TIME:
         EPD_time_loop();
+        break;
+      case VIEW_MODE_IMU:
+        EPD_imu_loop();
         break;
       case VIEW_MODE_STATUS:
       default:
@@ -625,11 +635,11 @@ void EPD_Up()
     case VIEW_MODE_BARO:
       EPD_baro_prev();
       break;
-    case VIEW_MODE_IMU:
-      EPD_imu_prev();
-      break;
     case VIEW_MODE_TIME:
       EPD_time_prev();
+      break;
+    case VIEW_MODE_IMU:
+      EPD_imu_prev();
       break;
     case VIEW_MODE_STATUS:
     default:
@@ -653,11 +663,11 @@ void EPD_Down()
     case VIEW_MODE_BARO:
       EPD_baro_next();
       break;
-    case VIEW_MODE_IMU:
-      EPD_imu_next();
-      break;
     case VIEW_MODE_TIME:
       EPD_time_next();
+      break;
+    case VIEW_MODE_IMU:
+      EPD_imu_next();
       break;
     case VIEW_MODE_STATUS:
     default:

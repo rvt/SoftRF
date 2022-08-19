@@ -1,5 +1,4 @@
 /**
-/**
  *
  * @license MIT License
  *
@@ -29,7 +28,10 @@
  *
  */
 
+#if defined(ARDUINO)
 #include <Arduino.h>
+#endif /*ARDUINO*/
+
 #include "XPowersCommon.tpp"
 #include "REG/AXP2101Constants.h"
 
@@ -1273,7 +1275,7 @@ public:
         if (millivolt < XPOWERS_DCDC1_VOL_MIN) {
             log_e("Mistake ! DC1 minimum voltage is %u mV", XPOWERS_DCDC1_VOL_MIN);
             return false;
-        } else if (millivolt > XPOWERS_DCDC5_VOL_MAX) {
+        } else if (millivolt > XPOWERS_DCDC1_VOL_MAX) {
             log_e("Mistake ! DC1 maximum voltage is %u mV", XPOWERS_DCDC1_VOL_MAX);
             return false;
         }
@@ -1322,7 +1324,7 @@ public:
 
     bool setDC2Voltage(uint16_t millivolt)
     {
-        uint8_t val = readRegister(XPOWERS_DC_VOL1_CTRL);
+        int val = readRegister(XPOWERS_DC_VOL1_CTRL);
         if (val == -1)return 0;
         val &= 0x80;
         if (millivolt >= XPOWERS_DCDC2_VOL1_MIN && millivolt <= XPOWERS_DCDC2_VOL1_MAX) {

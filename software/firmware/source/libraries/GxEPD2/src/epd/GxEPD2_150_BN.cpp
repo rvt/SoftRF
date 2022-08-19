@@ -2,8 +2,9 @@
 // Requires HW SPI and Adafruit_GFX. Caution: the e-paper panels require 3.3V supply AND data lines!
 //
 // based on Demo Example from Good Display, available here: http://www.e-paper-display.com/download_detail/downloadsId=806.html
-// Panel: GDEH0154D67 : http://www.e-paper-display.com/products_detail/productId=455.html
+// Panel: DEPG0150BN : https://www.dke.top/products/dke-154-inch-small-display-modules-epd152x152-electronic-e-ink-paper-displays
 // Controller : SSD1681 : http://www.e-paper-display.com/download_detail/downloadsId=825.html
+// Display: LILYGO® TTGO T5 V2.4.1 1.50 inch : https://www.aliexpress.com/item/4000384679772.html
 //
 // Author: Jean-Marc Zingg
 //
@@ -11,21 +12,21 @@
 //
 // Library: https://github.com/ZinggJM/GxEPD2
 
-#include "GxEPD2_154_D67.h"
+#include "GxEPD2_150_BN.h"
 
-GxEPD2_154_D67::GxEPD2_154_D67(int16_t cs, int16_t dc, int16_t rst, int16_t busy) :
+GxEPD2_150_BN::GxEPD2_150_BN(int16_t cs, int16_t dc, int16_t rst, int16_t busy) :
   GxEPD2_EPD(cs, dc, rst, busy, HIGH, 10000000, WIDTH, HEIGHT, panel, hasColor, hasPartialUpdate, hasFastPartialUpdate)
 {
 }
 
-void GxEPD2_154_D67::clearScreen(uint8_t value)
+void GxEPD2_150_BN::clearScreen(uint8_t value)
 {
   writeScreenBuffer(value);
   refresh(true);
   writeScreenBufferAgain(value);
 }
 
-void GxEPD2_154_D67::writeScreenBuffer(uint8_t value)
+void GxEPD2_150_BN::writeScreenBuffer(uint8_t value)
 {
   if (!_using_partial_mode) _Init_Part();
   if (_initial_write) _writeScreenBuffer(0x26, value); // set previous
@@ -33,13 +34,14 @@ void GxEPD2_154_D67::writeScreenBuffer(uint8_t value)
   _initial_write = false; // initial full screen buffer clean done
 }
 
-void GxEPD2_154_D67::writeScreenBufferAgain(uint8_t value)
+void GxEPD2_150_BN::writeScreenBufferAgain(uint8_t value)
 {
   if (!_using_partial_mode) _Init_Part();
+  _writeScreenBuffer(0x26, value); // set previous
   _writeScreenBuffer(0x24, value); // set current
 }
 
-void GxEPD2_154_D67::_writeScreenBuffer(uint8_t command, uint8_t value)
+void GxEPD2_150_BN::_writeScreenBuffer(uint8_t command, uint8_t value)
 {
   _writeCommand(command);
   for (uint32_t i = 0; i < uint32_t(WIDTH) * uint32_t(HEIGHT) / 8; i++)
@@ -48,23 +50,24 @@ void GxEPD2_154_D67::_writeScreenBuffer(uint8_t command, uint8_t value)
   }
 }
 
-void GxEPD2_154_D67::writeImage(const uint8_t bitmap[], int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm)
+void GxEPD2_150_BN::writeImage(const uint8_t bitmap[], int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm)
 {
   _writeImage(0x24, bitmap, x, y, w, h, invert, mirror_y, pgm);
 }
 
-void GxEPD2_154_D67::writeImageForFullRefresh(const uint8_t bitmap[], int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm)
+void GxEPD2_150_BN::writeImageForFullRefresh(const uint8_t bitmap[], int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm)
 {
   _writeImage(0x26, bitmap, x, y, w, h, invert, mirror_y, pgm);
   _writeImage(0x24, bitmap, x, y, w, h, invert, mirror_y, pgm);
 }
 
-void GxEPD2_154_D67::writeImageAgain(const uint8_t bitmap[], int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm)
+void GxEPD2_150_BN::writeImageAgain(const uint8_t bitmap[], int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm)
 {
-  _writeImage(0x24, bitmap, x, y, w, h, invert, mirror_y, pgm);
+  _writeImage(0x26, bitmap, x, y, w, h, invert, mirror_y, pgm); // set previous
+  _writeImage(0x24, bitmap, x, y, w, h, invert, mirror_y, pgm); // set current
 }
 
-void GxEPD2_154_D67::_writeImage(uint8_t command, const uint8_t bitmap[], int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm)
+void GxEPD2_150_BN::_writeImage(uint8_t command, const uint8_t bitmap[], int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm)
 {
   if (_initial_write) writeScreenBuffer(); // initial full screen buffer clean
   delay(1); // yield() to avoid WDT on ESP8266 and ESP32
@@ -109,19 +112,20 @@ void GxEPD2_154_D67::_writeImage(uint8_t command, const uint8_t bitmap[], int16_
   delay(1); // yield() to avoid WDT on ESP8266 and ESP32
 }
 
-void GxEPD2_154_D67::writeImagePart(const uint8_t bitmap[], int16_t x_part, int16_t y_part, int16_t w_bitmap, int16_t h_bitmap,
+void GxEPD2_150_BN::writeImagePart(const uint8_t bitmap[], int16_t x_part, int16_t y_part, int16_t w_bitmap, int16_t h_bitmap,
                                     int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm)
 {
   _writeImagePart(0x24, bitmap, x_part, y_part, w_bitmap, h_bitmap, x, y, w, h, invert, mirror_y, pgm);
 }
 
-void GxEPD2_154_D67::writeImagePartAgain(const uint8_t bitmap[], int16_t x_part, int16_t y_part, int16_t w_bitmap, int16_t h_bitmap,
+void GxEPD2_150_BN::writeImagePartAgain(const uint8_t bitmap[], int16_t x_part, int16_t y_part, int16_t w_bitmap, int16_t h_bitmap,
     int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm)
 {
-  _writeImagePart(0x24, bitmap, x_part, y_part, w_bitmap, h_bitmap, x, y, w, h, invert, mirror_y, pgm);
+  _writeImagePart(0x26, bitmap, x_part, y_part, w_bitmap, h_bitmap, x, y, w, h, invert, mirror_y, pgm); // set previous
+  _writeImagePart(0x24, bitmap, x_part, y_part, w_bitmap, h_bitmap, x, y, w, h, invert, mirror_y, pgm); // set current
 }
 
-void GxEPD2_154_D67::_writeImagePart(uint8_t command, const uint8_t bitmap[], int16_t x_part, int16_t y_part, int16_t w_bitmap, int16_t h_bitmap,
+void GxEPD2_150_BN::_writeImagePart(uint8_t command, const uint8_t bitmap[], int16_t x_part, int16_t y_part, int16_t w_bitmap, int16_t h_bitmap,
                                      int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm)
 {
   if (_initial_write) writeScreenBuffer(); // initial full screen buffer clean
@@ -173,7 +177,7 @@ void GxEPD2_154_D67::_writeImagePart(uint8_t command, const uint8_t bitmap[], in
   delay(1); // yield() to avoid WDT on ESP8266 and ESP32
 }
 
-void GxEPD2_154_D67::writeImage(const uint8_t* black, const uint8_t* color, int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm)
+void GxEPD2_150_BN::writeImage(const uint8_t* black, const uint8_t* color, int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm)
 {
   if (black)
   {
@@ -181,7 +185,7 @@ void GxEPD2_154_D67::writeImage(const uint8_t* black, const uint8_t* color, int1
   }
 }
 
-void GxEPD2_154_D67::writeImagePart(const uint8_t* black, const uint8_t* color, int16_t x_part, int16_t y_part, int16_t w_bitmap, int16_t h_bitmap,
+void GxEPD2_150_BN::writeImagePart(const uint8_t* black, const uint8_t* color, int16_t x_part, int16_t y_part, int16_t w_bitmap, int16_t h_bitmap,
                                     int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm)
 {
   if (black)
@@ -190,7 +194,7 @@ void GxEPD2_154_D67::writeImagePart(const uint8_t* black, const uint8_t* color, 
   }
 }
 
-void GxEPD2_154_D67::writeNative(const uint8_t* data1, const uint8_t* data2, int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm)
+void GxEPD2_150_BN::writeNative(const uint8_t* data1, const uint8_t* data2, int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm)
 {
   if (data1)
   {
@@ -198,14 +202,14 @@ void GxEPD2_154_D67::writeNative(const uint8_t* data1, const uint8_t* data2, int
   }
 }
 
-void GxEPD2_154_D67::drawImage(const uint8_t bitmap[], int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm)
+void GxEPD2_150_BN::drawImage(const uint8_t bitmap[], int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm)
 {
   writeImage(bitmap, x, y, w, h, invert, mirror_y, pgm);
   refresh(x, y, w, h);
   writeImageAgain(bitmap, x, y, w, h, invert, mirror_y, pgm);
 }
 
-void GxEPD2_154_D67::drawImagePart(const uint8_t bitmap[], int16_t x_part, int16_t y_part, int16_t w_bitmap, int16_t h_bitmap,
+void GxEPD2_150_BN::drawImagePart(const uint8_t bitmap[], int16_t x_part, int16_t y_part, int16_t w_bitmap, int16_t h_bitmap,
                                    int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm)
 {
   writeImagePart(bitmap, x_part, y_part, w_bitmap, h_bitmap, x, y, w, h, invert, mirror_y, pgm);
@@ -213,7 +217,7 @@ void GxEPD2_154_D67::drawImagePart(const uint8_t bitmap[], int16_t x_part, int16
   writeImagePartAgain(bitmap, x_part, y_part, w_bitmap, h_bitmap, x, y, w, h, invert, mirror_y, pgm);
 }
 
-void GxEPD2_154_D67::drawImage(const uint8_t* black, const uint8_t* color, int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm)
+void GxEPD2_150_BN::drawImage(const uint8_t* black, const uint8_t* color, int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm)
 {
   if (black)
   {
@@ -221,7 +225,7 @@ void GxEPD2_154_D67::drawImage(const uint8_t* black, const uint8_t* color, int16
   }
 }
 
-void GxEPD2_154_D67::drawImagePart(const uint8_t* black, const uint8_t* color, int16_t x_part, int16_t y_part, int16_t w_bitmap, int16_t h_bitmap,
+void GxEPD2_150_BN::drawImagePart(const uint8_t* black, const uint8_t* color, int16_t x_part, int16_t y_part, int16_t w_bitmap, int16_t h_bitmap,
                                    int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm)
 {
   if (black)
@@ -230,7 +234,7 @@ void GxEPD2_154_D67::drawImagePart(const uint8_t* black, const uint8_t* color, i
   }
 }
 
-void GxEPD2_154_D67::drawNative(const uint8_t* data1, const uint8_t* data2, int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm)
+void GxEPD2_150_BN::drawNative(const uint8_t* data1, const uint8_t* data2, int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm)
 {
   if (data1)
   {
@@ -238,7 +242,7 @@ void GxEPD2_154_D67::drawNative(const uint8_t* data1, const uint8_t* data2, int1
   }
 }
 
-void GxEPD2_154_D67::refresh(bool partial_update_mode)
+void GxEPD2_150_BN::refresh(bool partial_update_mode)
 {
   if (partial_update_mode) refresh(0, 0, WIDTH, HEIGHT);
   else
@@ -249,7 +253,7 @@ void GxEPD2_154_D67::refresh(bool partial_update_mode)
   }
 }
 
-void GxEPD2_154_D67::refresh(int16_t x, int16_t y, int16_t w, int16_t h)
+void GxEPD2_150_BN::refresh(int16_t x, int16_t y, int16_t w, int16_t h)
 {
   if (_initial_refresh) return refresh(false); // initial update needs be full update
   // intersection with screen
@@ -259,7 +263,7 @@ void GxEPD2_154_D67::refresh(int16_t x, int16_t y, int16_t w, int16_t h)
   int16_t y1 = y < 0 ? 0 : y; // limit
   w1 = x1 + w1 < int16_t(WIDTH) ? w1 : int16_t(WIDTH) - x1; // limit
   h1 = y1 + h1 < int16_t(HEIGHT) ? h1 : int16_t(HEIGHT) - y1; // limit
-  if ((w1 <= 0) || (h1 <= 0)) return;
+  if ((w1 <= 0) || (h1 <= 0)) return; 
   // make x1, w1 multiple of 8
   w1 += x1 % 8;
   if (w1 % 8 > 0) w1 += 8 - w1 % 8;
@@ -269,12 +273,12 @@ void GxEPD2_154_D67::refresh(int16_t x, int16_t y, int16_t w, int16_t h)
   _Update_Part();
 }
 
-void GxEPD2_154_D67::powerOff()
+void GxEPD2_150_BN::powerOff()
 {
   _PowerOff();
 }
 
-void GxEPD2_154_D67::hibernate()
+void GxEPD2_150_BN::hibernate()
 {
   _PowerOff();
   if (_rst >= 0)
@@ -285,7 +289,7 @@ void GxEPD2_154_D67::hibernate()
   }
 }
 
-void GxEPD2_154_D67::_setPartialRamArea(uint16_t x, uint16_t y, uint16_t w, uint16_t h)
+void GxEPD2_150_BN::_setPartialRamArea(uint16_t x, uint16_t y, uint16_t w, uint16_t h)
 {
   _writeCommand(0x11); // set ram entry mode
   _writeData(0x03);    // x increase, y increase : normal mode
@@ -304,7 +308,7 @@ void GxEPD2_154_D67::_setPartialRamArea(uint16_t x, uint16_t y, uint16_t w, uint
   _writeData(y / 256);
 }
 
-void GxEPD2_154_D67::_PowerOn()
+void GxEPD2_150_BN::_PowerOn()
 {
   if (!_power_is_on)
   {
@@ -316,7 +320,7 @@ void GxEPD2_154_D67::_PowerOn()
   _power_is_on = true;
 }
 
-void GxEPD2_154_D67::_PowerOff()
+void GxEPD2_150_BN::_PowerOff()
 {
   if (_power_is_on)
   {
@@ -329,7 +333,7 @@ void GxEPD2_154_D67::_PowerOff()
   _using_partial_mode = false;
 }
 
-void GxEPD2_154_D67::_InitDisplay()
+void GxEPD2_150_BN::_InitDisplay()
 {
   if (_hibernating) _reset();
   delay(10); // 10ms according to specs
@@ -346,21 +350,45 @@ void GxEPD2_154_D67::_InitDisplay()
   _setPartialRamArea(0, 0, WIDTH, HEIGHT);
 }
 
-void GxEPD2_154_D67::_Init_Full()
+const unsigned char GxEPD2_150_BN::lut_partial[] PROGMEM =
+{
+    0x00, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x80, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x40, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x0F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+    0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x00, 0x00, 0x00,
+};
+
+void GxEPD2_150_BN::_Init_Full()
 {
   _InitDisplay();
   _PowerOn();
   _using_partial_mode = false;
 }
 
-void GxEPD2_154_D67::_Init_Part()
+void GxEPD2_150_BN::_Init_Part()
 {
   _InitDisplay();
+  _writeCommand(0x32);
+  _writeDataPGM(lut_partial, sizeof(lut_partial));
   _PowerOn();
   _using_partial_mode = true;
 }
 
-void GxEPD2_154_D67::_Update_Full()
+void GxEPD2_150_BN::_Update_Full()
 {
   _writeCommand(0x22);
   _writeData(0xf4);
@@ -368,7 +396,7 @@ void GxEPD2_154_D67::_Update_Full()
   _waitWhileBusy("_Update_Full", full_refresh_time);
 }
 
-void GxEPD2_154_D67::_Update_Part()
+void GxEPD2_150_BN::_Update_Part()
 {
   _writeCommand(0x22);
   _writeData(0xfc);
@@ -376,7 +404,7 @@ void GxEPD2_154_D67::_Update_Part()
   _waitWhileBusy("_Update_Part", partial_refresh_time);
 }
 
-bool GxEPD2_154_D67::probe()
+bool GxEPD2_150_BN::probe()
 {
   if (_timeout_expired) {
     return false;

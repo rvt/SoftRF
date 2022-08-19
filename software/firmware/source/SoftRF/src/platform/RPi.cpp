@@ -150,9 +150,11 @@ std::string input_line;
 TCPServer Traffic_TCP_Server;
 
 #if defined(USE_EPAPER)
-GxEPD2_BW<GxEPD2_270, GxEPD2_270::HEIGHT> __attribute__ ((common)) epd_waveshare(GxEPD2_270(/*CS=5*/ 8,
+GxEPD2_BW<GxEPD2_270, GxEPD2_270::HEIGHT> __attribute__ ((common)) epd_waveshare_W3(GxEPD2_270(/*CS=5*/ 8,
                                        /*DC=*/ 25, /*RST=*/ 17, /*BUSY=*/ 24));
-GxEPD2_BW<GxEPD2_270, GxEPD2_270::HEIGHT> *display;
+GxEPD2_BW<GxEPD2_270_T91, GxEPD2_270_T91::HEIGHT> __attribute__ ((common)) epd_waveshare_T91(GxEPD2_270_T91(/*CS=5*/ 8,
+                                       /*DC=*/ 25, /*RST=*/ 17, /*BUSY=*/ 24));
+GxEPD2_GFX *display;
 #endif /* USE_EPAPER */
 
 ui_settings_t ui_settings = {
@@ -396,10 +398,12 @@ static byte RPi_Display_setup()
   byte rval = DISPLAY_NONE;
 
 #if defined(USE_EPAPER)
-// GxEPD2_BW<GxEPD2_270, GxEPD2_270::HEIGHT> *epd_waveshare = new GxEPD2_BW<GxEPD2_270, GxEPD2_270::HEIGHT>(GxEPD2_270(/*CS=5*/ 8,
-//                                       /*DC=*/ 25, /*RST=*/ 17, /*BUSY=*/ 24));
 
-  display = &epd_waveshare;
+#if !defined(USE_GDEY027T91)
+  display = &epd_waveshare_W3;
+#else
+  display = &epd_waveshare_T91;
+#endif /* USE_GDEY027T91 */
 
   if (EPD_setup(true)) {
 
@@ -434,7 +438,6 @@ static void RPi_Display_fini(int reason)
 {
 #if defined(USE_EPAPER)
 
-  EPD_Clear_Screen();
   EPD_fini(reason, false);
 
   if ( RPi_EPD_update_thread != (pthread_t) 0)

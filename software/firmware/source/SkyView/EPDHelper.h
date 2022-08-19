@@ -19,8 +19,7 @@
 #ifndef EPDHELPER_H
 #define EPDHELPER_H
 
-#define ENABLE_GxEPD2_GFX 0
-
+#define ENABLE_GxEPD2_GFX       1
 #include <GxEPD2_BW.h>
 
 #define EPD_EXPIRATION_TIME     5 /* seconds */
@@ -59,6 +58,12 @@ enum
 	EPD_UPDATE_FAST
 };
 
+enum ep_model_id {
+	EP_UNKNOWN,
+	EP_GDEW027W3,
+	EP_GDEY027T91,
+};
+
 byte EPD_setup(bool);
 void EPD_loop();
 void EPD_fini(const char *);
@@ -81,7 +86,7 @@ void EPD_text_next();
 void EPD_text_prev();
 void EPD_text_Draw_Message(const char *, const char *);
 
-extern GxEPD2_BW<GxEPD2_270, GxEPD2_270::HEIGHT> *display;
+extern GxEPD2_GFX *display;
 extern unsigned long EPDTimeMarker;
 extern bool EPD_display_frontpage;
 extern volatile int EPD_task_command;

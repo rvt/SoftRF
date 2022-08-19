@@ -186,6 +186,20 @@ extern Adafruit_NeoPixel strip;
 #define SOC_GPIO_PIN_TBEAM_SDA          13
 #define SOC_GPIO_PIN_TBEAM_SCL          2
 
+// Hardware pin definitions for TTGO LoRa V2 board
+// with OLED SSD1306 0,96" I2C Display
+#define TTGO_V2_OLED_PIN_RST            U8X8_PIN_NONE // connected to CPU RST/EN
+#define TTGO_V2_OLED_PIN_SDA            21
+#define TTGO_V2_OLED_PIN_SCL            22
+#define TTGO_V2_PIN_GNSS_RX             34
+#define TTGO_V2_PIN_GNSS_TX             12
+#define TTGO_V2_PIN_GNSS_PPS            39
+
+// Hardware pin definitions for Heltec and TTGO-V1 LoRa-32 Boards with OLED SSD1306 I2C Display
+#define HELTEC_OLED_PIN_RST             U8X8_PIN_NONE // 16
+#define HELTEC_OLED_PIN_SDA             4
+#define HELTEC_OLED_PIN_SCL             15
+
 /* TTGO T-Watch section */
 // GNSS module
 #define SOC_GPIO_PIN_TWATCH_RX          34
@@ -267,18 +281,46 @@ extern Adafruit_NeoPixel strip;
 #endif
 #define LV_VER_RES                      (240) //vertical
 
-/* ESP32-S3 DevKit section */
+/* ESP32-S3 section 1 (core) */
 #define SOC_GPIO_PIN_S3_CONS_RX         44
 #define SOC_GPIO_PIN_S3_CONS_TX         43
 
 // GNSS module
-#define SOC_GPIO_PIN_S3_GNSS_RX         18
-#define SOC_GPIO_PIN_S3_GNSS_TX         17
-#define SOC_GPIO_PIN_S3_GNSS_PPS        7
+#define SOC_GPIO_PIN_S3_GNSS_RX         9
+#define SOC_GPIO_PIN_S3_GNSS_TX         8
+#define SOC_GPIO_PIN_S3_GNSS_PPS        6
+#define SOC_GPIO_PIN_S3_GNSS_WAKE       7
 
 // USB
 #define SOC_GPIO_PIN_S3_USB_DP          20
 #define SOC_GPIO_PIN_S3_USB_DN          19
+
+// SX1262 (HPD16A)
+#define SOC_GPIO_PIN_S3_MOSI            11
+#define SOC_GPIO_PIN_S3_MISO            13
+#define SOC_GPIO_PIN_S3_SCK             12
+#define SOC_GPIO_PIN_S3_SS              10
+#define SOC_GPIO_PIN_S3_RST             5 /* shared with TFT RST (and/or I2C OLED RST) */
+#define SOC_GPIO_PIN_S3_BUSY            4 /* shared with HPD13A DIO2 */
+// SX1276 (HPD13A)
+#define SOC_GPIO_PIN_S3_DIO0            2
+#define SOC_GPIO_PIN_S3_DIO1            1
+#define SOC_GPIO_PIN_S3_DIO2            4 /* shared with HPD16A BUSY */
+
+/* 2nd I2C bus (PMU) */
+#define SOC_GPIO_PIN_S3_PMU_SDA         42
+#define SOC_GPIO_PIN_S3_PMU_SCL         41
+#define SOC_GPIO_PIN_S3_PMU_IRQ         40
+
+// 32768 Hz crystal
+#define SOC_GPIO_PIN_S3_XP              15
+#define SOC_GPIO_PIN_S3_XN              16
+
+// button (BOOT)
+#define SOC_GPIO_PIN_S3_BUTTON          0 // "strapping" pin (S)
+
+/* ESP32-S3 section 2 (reserved pins) */
+// 17,18 - I2C; 33,34,38,(47 ? - DC) - TFT/EINK; 35,36,37,39 - uSD; 2 - SX1276
 
 // TFT
 #define SOC_GPIO_PIN_S3_TFT_MOSI        35
@@ -289,41 +331,21 @@ extern Adafruit_NeoPixel strip;
 #define SOC_GPIO_PIN_S3_TFT_RST         38
 #define SOC_GPIO_PIN_S3_TFT_BL          33
 
-// SX1262 (HPD16A)
-#define SOC_GPIO_PIN_S3_MOSI            35
-#define SOC_GPIO_PIN_S3_MISO            40
-#define SOC_GPIO_PIN_S3_SCK             36
-#define SOC_GPIO_PIN_S3_SS              41
-#define SOC_GPIO_PIN_S3_RST             38 /* shared with TFT RST (and/or I2C OLED RST) */
-#define SOC_GPIO_PIN_S3_BUSY            42 /* shared with HPD13A DIO2 */
-// SX1276 (HPD13A)
-#define SOC_GPIO_PIN_S3_DIO0            47
-#define SOC_GPIO_PIN_S3_DIO1            48
-#define SOC_GPIO_PIN_S3_DIO2            42 /* shared with HPD16A BUSY */
-
 // I2C
-#define SOC_GPIO_PIN_S3_SDA             8
-#define SOC_GPIO_PIN_S3_SCL             9
-
-/* 2nd I2C bus (PMU) */
-#define SOC_GPIO_PIN_S3_OLED_SDA        1
-#define SOC_GPIO_PIN_S3_OLED_SCL        4
+#define SOC_GPIO_PIN_S3_SDA             17
+#define SOC_GPIO_PIN_S3_SCL             18
 
 // microSD SPI
-#define SOC_GPIO_PIN_S3_SD_MOSI         11
-#define SOC_GPIO_PIN_S3_SD_MISO         13
-#define SOC_GPIO_PIN_S3_SD_SCK          12
-#define SOC_GPIO_PIN_S3_SD_SS           10
+#define SOC_GPIO_PIN_S3_SD_MOSI         35
+#define SOC_GPIO_PIN_S3_SD_MISO         37
+#define SOC_GPIO_PIN_S3_SD_SCK          36
+#define SOC_GPIO_PIN_S3_SD_SS           39
 
-// button (BOOT)
-#define SOC_GPIO_PIN_S3_BUTTON          0 // "strapping" pin (S)
+/* ESP32-S3 section 3 (spare pins) */
+// 3(S), 14, 21, 45(S), 46(S), 47, 48
 
 // battery voltage (ADC)
-#define SOC_GPIO_PIN_S3_BATTERY         2
-
-// 32768 Hz crystal
-#define SOC_GPIO_PIN_S3_XP              15
-#define SOC_GPIO_PIN_S3_XN              16
+#define SOC_GPIO_PIN_S3_BATTERY         3 // (S)
 
 // LEDs, active state - HIGH
 #define SOC_GPIO_PIN_S3_STATUS          39
@@ -332,32 +354,6 @@ extern Adafruit_NeoPixel strip;
 #define SOC_GPIO_PIN_S3_LED_GREEN       6
 #define SOC_GPIO_PIN_S3_LED_BLUE        7
 #define SOC_GPIO_PIN_S3_LED4            38
-
-// Spare ESP32-S3 pins:
-// 46(S), 45(S), 21, 26
-// 3(S), 14
-// More spare pins when the devkit's Red and Green LEDs are not in use:
-// 5, 6
-// Few more when TFT is not connected:
-// 33, 34, 37
-// two more when there is no 32768 Hz crystal:
-// 15, 16
-// One more when SX1262 (HPD16A) is the only radio option:
-// 47
-
-// Hardware pin definitions for TTGO LoRa V2 board
-// with OLED SSD1306 0,96" I2C Display
-#define TTGO_V2_OLED_PIN_RST    U8X8_PIN_NONE // connected to CPU RST/EN
-#define TTGO_V2_OLED_PIN_SDA    21
-#define TTGO_V2_OLED_PIN_SCL    22
-#define TTGO_V2_PIN_GNSS_RX     34
-#define TTGO_V2_PIN_GNSS_TX     12
-#define TTGO_V2_PIN_GNSS_PPS    39
-
-// Hardware pin definitions for Heltec and TTGO-V1 LoRa-32 Boards with OLED SSD1306 I2C Display
-#define HELTEC_OLED_PIN_RST     U8X8_PIN_NONE // 16
-#define HELTEC_OLED_PIN_SDA     4
-#define HELTEC_OLED_PIN_SCL     15
 
 extern WebServer server;
 
@@ -376,6 +372,7 @@ enum esp32_board_id {
   ESP32_TTGO_V2_OLED,
   ESP32_HELTEC_OLED,
   ESP32_TTGO_T_BEAM,
+  ESP32_TTGO_T_BEAM_SUPREME,
   ESP32_TTGO_T_WATCH,
   ESP32_S2_T8_V1_1,
   ESP32_S3_DEVKIT,

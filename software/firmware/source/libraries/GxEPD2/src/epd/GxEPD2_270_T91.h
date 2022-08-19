@@ -1,8 +1,9 @@
 // Display Library for SPI e-paper panels from Dalian Good Display and boards from Waveshare.
-// Requires HW SPI and Adafruit_GFX. Caution: these e-papers require 3.3V supply AND data lines!
+// Requires HW SPI and Adafruit_GFX. Caution: the e-paper panels require 3.3V supply AND data lines!
 //
-// based on Demo Example from Good Display: http://www.e-paper-display.com/download_list/downloadcategoryid=34&isMode=false.html
-// Controller: IL91874 : http://www.e-paper-display.com/download_detail/downloadsId=539.html
+// based on Demo Example from Good Display, available here: http://www.e-paper-display.com/download_detail/downloadsId=806.html
+// Panel: GDEY027T91 : https://www.good-display.com/product/432.html
+// Controller : SSD1680 : https://www.good-display.com/companyfile/101.html
 //
 // Author: Jean-Marc Zingg
 //
@@ -10,27 +11,27 @@
 //
 // Library: https://github.com/ZinggJM/GxEPD2
 
-#ifndef _GxEPD2_270_H_
-#define _GxEPD2_270_H_
+#ifndef _GxEPD2_270_T91_H_
+#define _GxEPD2_270_T91_H_
 
 #include "../GxEPD2_EPD.h"
 
-class GxEPD2_270 : public GxEPD2_EPD
+class GxEPD2_270_T91 : public GxEPD2_EPD
 {
   public:
     // attributes
     static const uint16_t WIDTH = 176;
     static const uint16_t HEIGHT = 264;
-    static const GxEPD2::Panel panel = GxEPD2::GDEW027W3;
+    static const GxEPD2::Panel panel = GxEPD2::GDEY027T91;
     static const bool hasColor = false;
     static const bool hasPartialUpdate = true;
     static const bool hasFastPartialUpdate = true;
-    static const uint16_t power_on_time = 100; // ms, e.g. 98877us
-    static const uint16_t power_off_time = 30; // ms, e.g. 28405us
-    static const uint16_t full_refresh_time = 2000; // ms, e.g. 1979027us
-    static const uint16_t partial_refresh_time = 400; // ms, e.g. 363637us
+    static const uint16_t power_on_time = 100; // ms, e.g. 96000us
+    static const uint16_t power_off_time = 150; // ms, e.g. 141000us
+    static const uint16_t full_refresh_time = 2000; // ms, e.g. 1954000us
+    static const uint16_t partial_refresh_time = 500; // ms, e.g. 459000us
     // constructor
-    GxEPD2_270(int16_t cs, int16_t dc, int16_t rst, int16_t busy);
+    GxEPD2_270_T91(int16_t cs, int16_t dc, int16_t rst, int16_t busy);
     // methods (virtual)
     //  Support for Bitmaps (Sprites) to Controller Buffer and to Screen
     void clearScreen(uint8_t value = 0xFF); // init controller memory and screen (default white)
@@ -38,6 +39,7 @@ class GxEPD2_270 : public GxEPD2_EPD
     void writeScreenBufferAgain(uint8_t value = 0xFF); // init previous buffer controller memory (default white)
     // write to controller memory, without screen refresh; x and w should be multiple of 8
     void writeImage(const uint8_t bitmap[], int16_t x, int16_t y, int16_t w, int16_t h, bool invert = false, bool mirror_y = false, bool pgm = false);
+    void writeImageForFullRefresh(const uint8_t bitmap[], int16_t x, int16_t y, int16_t w, int16_t h, bool invert = false, bool mirror_y = false, bool pgm = false);
     void writeImagePart(const uint8_t bitmap[], int16_t x_part, int16_t y_part, int16_t w_bitmap, int16_t h_bitmap,
                         int16_t x, int16_t y, int16_t w, int16_t h, bool invert = false, bool mirror_y = false, bool pgm = false);
     void writeImage(const uint8_t* black, const uint8_t* color, int16_t x, int16_t y, int16_t w, int16_t h, bool invert = false, bool mirror_y = false, bool pgm = false);
@@ -64,11 +66,11 @@ class GxEPD2_270 : public GxEPD2_EPD
     void hibernate(); // turns powerOff() and sets controller to deep sleep for minimum power use, ONLY if wakeable by RST (rst >= 0)
     bool probe();
   private:
+    void _writeScreenBuffer(uint8_t command, uint8_t value);
     void _writeImage(uint8_t command, const uint8_t bitmap[], int16_t x, int16_t y, int16_t w, int16_t h, bool invert = false, bool mirror_y = false, bool pgm = false);
     void _writeImagePart(uint8_t command, const uint8_t bitmap[], int16_t x_part, int16_t y_part, int16_t w_bitmap, int16_t h_bitmap,
                          int16_t x, int16_t y, int16_t w, int16_t h, bool invert = false, bool mirror_y = false, bool pgm = false);
-    void _setPartialRamArea(uint8_t command, uint16_t x, uint16_t y, uint16_t w, uint16_t h);
-    void _refreshWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h);
+    void _setPartialRamArea(uint16_t x, uint16_t y, uint16_t w, uint16_t h);
     void _PowerOn();
     void _PowerOff();
     void _InitDisplay();
@@ -76,17 +78,6 @@ class GxEPD2_270 : public GxEPD2_EPD
     void _Init_Part();
     void _Update_Full();
     void _Update_Part();
-  private:
-    static const unsigned char lut_20_vcomDC[];
-    static const unsigned char lut_21_ww[];
-    static const unsigned char lut_22_bw[];
-    static const unsigned char lut_23_wb[];
-    static const unsigned char lut_24_bb[];
-    static const unsigned char lut_20_vcomDC_partial[];
-    static const unsigned char lut_21_ww_partial[];
-    static const unsigned char lut_22_bw_partial[];
-    static const unsigned char lut_23_wb_partial[];
-    static const unsigned char lut_24_bb_partial[];
 };
 
 #endif

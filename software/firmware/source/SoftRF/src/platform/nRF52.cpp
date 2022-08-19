@@ -95,6 +95,7 @@ static struct rst_info reset_info = {
 static uint32_t bootCount __attribute__ ((section (".noinit")));
 
 static nRF52_board_id nRF52_board = NRF52_LILYGO_TECHO_REV_2; /* default */
+static nRF52_display_id nRF52_display = EP_UNKNOWN;
 
 const char *nRF52_Device_Manufacturer = SOFTRF_IDENT;
 const char *nRF52_Device_Model = "Badge Edition";
@@ -107,13 +108,11 @@ const char *Hardware_Rev[] = {
   [3] = "Unknown"
 };
 
-typedef struct { uint64_t id; nRF52_board_id rev; uint8_t tag; } __attribute__((packed)) prototype_entry_t;
-
 const prototype_entry_t techo_prototype_boards[] = {
-  { 0x684f99bd2d5c7fae, NRF52_LILYGO_TECHO_REV_0, 0 }, /* orange */
-  { 0xf353e11726ea8220, NRF52_LILYGO_TECHO_REV_0, 0 }, /* blue   */
-  { 0xf4e0f04ded1892da, NRF52_LILYGO_TECHO_REV_1, 0 }, /* green  */
-  { 0x65ab5994ea2c9094, NRF52_LILYGO_TECHO_REV_1, 0 }, /* blue   */
+  { 0x684f99bd2d5c7fae, NRF52_LILYGO_TECHO_REV_0, EP_GDEP015OC1,  0 }, /* orange */
+  { 0xf353e11726ea8220, NRF52_LILYGO_TECHO_REV_0, EP_GDEH0154D67, 0 }, /* blue   */
+  { 0xf4e0f04ded1892da, NRF52_LILYGO_TECHO_REV_1, EP_GDEH0154D67, 0 }, /* green  */
+  { 0x65ab5994ea2c9094, NRF52_LILYGO_TECHO_REV_1, EP_GDEH0154D67, 0 }, /* blue   */
 };
 
 PCF8563_Class *rtc = nullptr;
@@ -153,13 +152,23 @@ SPIClass SPI1(_SPI1_DEV,
               SOC_GPIO_PIN_EPD_MOSI);
 #endif
 
-GxEPD2_BW<TECHO_DISPLAY_MODEL, TECHO_DISPLAY_MODEL::HEIGHT> epd_ttgo_techo(TECHO_DISPLAY_MODEL(
-                                                            SOC_GPIO_PIN_EPD_SS,
-                                                            SOC_GPIO_PIN_EPD_DC,
-                                                            SOC_GPIO_PIN_EPD_RST,
-                                                            SOC_GPIO_PIN_EPD_BUSY));
+GxEPD2_BW<GxEPD2_154_D67, GxEPD2_154_D67::HEIGHT> epd_d67(GxEPD2_154_D67(
+                                                          SOC_GPIO_PIN_EPD_SS,
+                                                          SOC_GPIO_PIN_EPD_DC,
+                                                          SOC_GPIO_PIN_EPD_RST,
+                                                          SOC_GPIO_PIN_EPD_BUSY));
+GxEPD2_BW<GxEPD2_154, GxEPD2_154::HEIGHT>         epd_c1 (GxEPD2_154(
+                                                          SOC_GPIO_PIN_EPD_SS,
+                                                          SOC_GPIO_PIN_EPD_DC,
+                                                          SOC_GPIO_PIN_EPD_RST,
+                                                          SOC_GPIO_PIN_EPD_BUSY));
+GxEPD2_BW<GxEPD2_150_BN, GxEPD2_150_BN::HEIGHT>   epd_bn (GxEPD2_150_BN(
+                                                          SOC_GPIO_PIN_EPD_SS,
+                                                          SOC_GPIO_PIN_EPD_DC,
+                                                          SOC_GPIO_PIN_EPD_RST,
+                                                          SOC_GPIO_PIN_EPD_BUSY));
 
-GxEPD2_BW<TECHO_DISPLAY_MODEL, TECHO_DISPLAY_MODEL::HEIGHT> *display;
+GxEPD2_GFX *display;
 #endif /* USE_EPAPER */
 
 Adafruit_FlashTransport_QSPI HWFlashTransport(SOC_GPIO_PIN_SFL_SCK,
@@ -407,7 +416,8 @@ static void nRF52_setup()
 
   for (int i=0; i < sizeof(techo_prototype_boards) / sizeof(prototype_entry_t); i++) {
     if (techo_prototype_boards[i].id == ((uint64_t) DEVICE_ID_HIGH << 32 | (uint64_t) DEVICE_ID_LOW)) {
-      nRF52_board = techo_prototype_boards[i].rev;
+      nRF52_board   = techo_prototype_boards[i].rev;
+      nRF52_display = techo_prototype_boards[i].panel;
       break;
     }
   }
@@ -1288,6 +1298,94 @@ static void nRF52_swSer_enableRx(boolean arg)
 SemaphoreHandle_t Display_Semaphore;
 unsigned long TaskInfoTime;
 
+#if defined(USE_EPAPER)
+
+#include <SoftSPI.h>
+SoftSPI swSPI(SOC_GPIO_PIN_EPD_MOSI,
+              SOC_GPIO_PIN_EPD_MOSI, /* half duplex */
+              SOC_GPIO_PIN_EPD_SCK);
+
+static nRF52_display_id nRF52_EPD_ident()
+{
+  nRF52_display_id rval = EP_GDEH0154D67; /* default */
+
+  digitalWrite(SOC_GPIO_PIN_EPD_SS, HIGH);
+  pinMode(SOC_GPIO_PIN_EPD_SS, OUTPUT);
+  digitalWrite(SOC_GPIO_PIN_EPD_DC, HIGH);
+  pinMode(SOC_GPIO_PIN_EPD_DC, OUTPUT);
+
+  digitalWrite(SOC_GPIO_PIN_EPD_RST, LOW);
+  pinMode(SOC_GPIO_PIN_EPD_RST, OUTPUT);
+  delay(20);
+  pinMode(SOC_GPIO_PIN_EPD_RST, INPUT_PULLUP);
+  delay(200);
+  pinMode(SOC_GPIO_PIN_EPD_BUSY, INPUT);
+
+  swSPI.begin();
+
+  uint8_t buf[11];
+
+  taskENTER_CRITICAL();
+
+  digitalWrite(SOC_GPIO_PIN_EPD_DC, LOW);
+  digitalWrite(SOC_GPIO_PIN_EPD_SS, LOW);
+
+  swSPI.transfer_out(0x2D /* 0x2E */);
+
+  pinMode(SOC_GPIO_PIN_EPD_MOSI, INPUT);
+  digitalWrite(SOC_GPIO_PIN_EPD_DC, HIGH);
+
+  for (int i=0; i<10; i++) {
+    buf[i] = swSPI.transfer_in();
+  }
+
+  digitalWrite(SOC_GPIO_PIN_EPD_SCK, LOW);
+  digitalWrite(SOC_GPIO_PIN_EPD_DC,  LOW);
+  digitalWrite(SOC_GPIO_PIN_EPD_SS,  HIGH);
+
+  taskEXIT_CRITICAL();
+
+  swSPI.end();
+
+#if 0
+  for (int i=0; i<10; i++) {
+    Serial.print(buf[i], HEX);
+    Serial.print(' ');
+  }
+  Serial.println();
+
+/*
+ *  0x2D:
+ *  FF FF FF FF FF FF FF FF FF FF FF - C1
+ *  00 00 00 00 00 FF 40 00 00 00 01 - D67 SYX 1942
+ *  00 00 00 FF 00 00 40 01 00 00 00 - D67
+ *
+ *  0x2E:
+ *  00 00 00 00 00 00 00 00 00 00    - C1
+ *  00 00 00 00 00 00 00 00 00 00    - D67 SYX 1942
+ *  00 05 00 9A 00 55 35 37 14 0C    - D67
+ */
+#endif
+
+  bool is_ff = true;
+  for (int i=0; i<10; i++) {
+    if (buf[i] != 0xFF) {is_ff = false; break;}
+  }
+
+  bool is_00 = true;
+  for (int i=0; i<10; i++) {
+    if (buf[i] != 0x00) {is_00 = false; break;}
+  }
+
+  if (is_ff || is_00) {
+//    rval = EP_DEPG0150BN; /* TBD */
+  }
+
+  return rval;
+}
+
+#endif /* USE_EPAPER */
+
 static byte nRF52_Display_setup()
 {
   byte rval = DISPLAY_NONE;
@@ -1300,7 +1398,23 @@ static byte nRF52_Display_setup()
                SOC_GPIO_PIN_EPD_MOSI);
 #endif
 
-  display = &epd_ttgo_techo;
+  if (nRF52_display == EP_UNKNOWN) {
+    nRF52_display = nRF52_EPD_ident();
+  }
+
+  switch (nRF52_display)
+  {
+  case EP_GDEP015OC1:
+    display = &epd_c1;
+    break;
+  case EP_DEPG0150BN:
+    display = &epd_bn;
+    break;
+  case EP_GDEH0154D67:
+  default:
+    display = &epd_d67;
+    break;
+  }
 
   if (EPD_setup(true)) {
 

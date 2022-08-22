@@ -16,9 +16,9 @@ DIY, multi-functional, compatible, sub-1 GHz ISM band radio based proximity awar
 
 **IMPORTANT**: after compiling/flashing, SoftRF needs to be configured as follows, using the respective method:
 - disable "NMEA sentences - Legacy"
-- when connecting SoftRF via USB with Stratux:
+- when connecting SoftRF **via USB** with Stratux Europe Edition:
   - set "NMEA output" to USB
-- when connecting SoftRF via Bluetooth LE with Stratux (**WORK IN PROGRESS, NOT IMPLEMENTED IN STRATUX YET**):
+- when connecting SoftRF **via Bluetooth LE** with Stratux Europe Edition (beta version implemented in rvt's fork: https://github.com/rvt/stratux/tree/bluetooth-le-devices)
   - set "NMEA output" to Bluetooth (default)
 
 ## Features

@@ -115,10 +115,15 @@ extern Adafruit_NeoPixel strip;
 #define SOC_GPIO_PIN_GNSS_RX    23
 #define SOC_GPIO_PIN_GNSS_TX    12
 #define SOC_GPIO_PIN_BATTERY    36
+
 #if defined(CONFIG_IDF_TARGET_ESP32)
 #define SOC_GPIO_PIN_LED        25
-#else
+#elif defined(CONFIG_IDF_TARGET_ESP32S2)
 #define SOC_GPIO_PIN_LED        7
+#elif defined(CONFIG_IDF_TARGET_ESP32S3)
+#define SOC_GPIO_PIN_LED        SOC_UNUSED_PIN /* TBD 14? */
+#else
+#error "This ESP32 family build variant is not supported!"
 #endif
 
 #define SOC_GPIO_PIN_STATUS   (hw_info.model != SOFTRF_MODEL_PRIME_MK2 ?\
@@ -131,10 +136,12 @@ extern Adafruit_NeoPixel strip;
                                       SOC_GPIO_PIN_TBEAM_LED_V11 :      \
                                       SOC_UNUSED_PIN))))
 
-#define SOC_GPIO_PIN_GNSS_PPS (hw_info.model != SOFTRF_MODEL_PRIME_MK2 ?\
-                                SOC_UNUSED_PIN :                        \
-                                (hw_info.revision == 8 ?                \
-                                  SOC_GPIO_PIN_TBEAM_V08_PPS :          \
+#define SOC_GPIO_PIN_GNSS_PPS (hw_info.model == SOFTRF_MODEL_PRIME_MK3 ?  \
+                                SOC_GPIO_PIN_S3_GNSS_PPS :                \
+                                (hw_info.model == SOFTRF_MODEL_PRIME_MK2 ?\
+                                  (hw_info.revision >= 8 ?                \
+                                    SOC_GPIO_PIN_TBEAM_V08_PPS :          \
+                                    SOC_UNUSED_PIN) :                     \
                                   SOC_UNUSED_PIN))
 
 #define SOC_GPIO_PIN_BUZZER   (hw_info.model == SOFTRF_MODEL_PRIME_MK2 ?\

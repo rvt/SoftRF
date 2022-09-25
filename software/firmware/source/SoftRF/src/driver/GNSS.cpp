@@ -1370,6 +1370,20 @@ void GNSSTimeSync()
             gnss.date.month(),
             gnss.date.year());
     GNSSTimeSyncMarker = millis();
+
+    // GNSS_MODULE_AT65 does not provide millisecond accuracy for GNRMC/GNGGA that is required for stratux.
+    // to provide stratux with some sense of time we send right before GGA a PSOFT that will stratux
+    // use to notice start of the next second because. 
+    // according to doc, AT65 will send block's of data starting each second, starting with GGA so we key on that..
+    // Note: For position data the GPS recalculates the location as if it where at second 000
+#if defined(STRATUX)
+    char sz[18];
+    snprintf_P(sz, sizeof(sz),PSTR("$PSOFT,%s*"),
+    GNSS_name[hw_info.gnss]);
+    NMEA_add_checksum(sz, sizeof(sz) - strlen(sz));
+    NMEA_Out(settings->nmea_out, (byte *)sz, strlen(sz), false);
+#endif /* STRATUX */
+
   }
 }
 
@@ -1516,23 +1530,6 @@ void PickGNSSFix()
 #endif
 
           {
-            // GNSS_MODULE_AT65 does not provide millisecond accuracy for GNRMC/GNGGA that is required for stratux.
-            // to provide stratux with some sence of time we send right before GGA a PSOFT that will stratux
-            // use to notice start of the next second because. 
-            // according to doc, AT65 will send block's of data starting each second, starting with GGA so we key on that..
-            // Note: For position data the GPS recalculates the location as if it where at second 000
-#if defined(STRATUX)
-            if (hw_info.gnss == GNSS_MODULE_AT65 &&   
-                strncmp((char *) &GNSSbuf[ndx+3], "GGA", strlen("GGA")) == 0) {
-                char sz[40];
-                snprintf_P(sz, sizeof(sz),PSTR("$PSOFT,%02d%02d%02d.000,%02d%02d%02d,%s*"),
-                gnss.time.hour(), gnss.time.minute(), gnss.time.second(), 
-                gnss.date.day(), gnss.date.month(), gnss.date.year() - 2000,
-                GNSS_name[hw_info.gnss]);
-                NMEA_add_checksum(sz, sizeof(sz) - strlen(sz));
-                NMEA_Out(settings->nmea_out, (byte *)sz, strlen(sz), false);
-            }
-#endif /* STRATUX */
             NMEA_Out(settings->nmea_out, &GNSSbuf[ndx], write_size, true);
           }
 

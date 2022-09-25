@@ -42,9 +42,9 @@ jobs:
           sleep 3
           export DISPLAY=:1.0
           mkdir -p ~/.local/bin
-          curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=~/.local/bin sh
+          curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=~/.local/bin sh ;
           if [[ "$BOARD" =~ "adafruit:nrf52:" ]]; then
-            sudo apt-get install python3-pip elf2uf2;
+            sudo apt-get install python3-pip ;
             pip3 install setuptools --user ;
             pip3 install adafruit-nrfutil --user ;
             pip3 install intelhex --user ;

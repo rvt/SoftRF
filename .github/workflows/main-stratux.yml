@@ -74,5 +74,5 @@ jobs:
         run: |
           echo 'Building board ${BOARD}'
           arduino-cli compile -e -b $BOARD $PWD/software/firmware/source/SoftRF ;
-          ls $PWD/software/firmware/source/SoftRF/build/adafruit.nrf52.pca10056/
           ~/uf2/utils/uf2conv.py $PWD/software/firmware/source/SoftRF/build/adafruit.nrf52.pca10056/SoftRF.ino.hex -c -f 0xADA52840
+          ls $PWD/software/firmware/source/SoftRF/build/adafruit.nrf52.pca10056/

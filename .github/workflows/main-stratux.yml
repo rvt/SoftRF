@@ -77,6 +77,3 @@ jobs:
           if [[ "$BOARD" =~ "adafruit:nrf52:"      ]]; then
             arduino-cli compile -e -b --board $BOARD $PWD/software/firmware/source/SoftRF;
           fi ;
-
-/home/runner/:
-  local/bin:

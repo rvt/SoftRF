@@ -44,6 +44,7 @@ jobs:
           mkdir -p ~/.local/bin
           curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=~/.local/bin sh ;
           ls ~/.local/bin ;
+          which elf2uf2 ;
           if [[ "$BOARD" =~ "adafruit:nrf52:" ]]; then
             sudo apt-get install python3-pip ;
             pip3 install setuptools --user ;

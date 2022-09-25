@@ -42,7 +42,7 @@ jobs:
           sleep 3
           export DISPLAY=:1.0
 
-          echo "${HOME}/work/SoftRF/SoftRF/bin" >> $GITHUB_PATH
+          export PATH="${PATH}:${HOME}/bin"
           export
 
           curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh

@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: build
+name: SoftRF Stratux builds
 
 # Controls when the workflow will run
 on:
@@ -41,7 +41,7 @@ jobs:
           /sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_1.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :1 -ac -screen 0 1280x1024x16
           sleep 3
           export DISPLAY=:1.0
-          curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=~/bin sh
+          curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=~/.local/bin sh
           if [[ "$BOARD" =~ "adafruit:nrf52:" ]]; then
             sudo apt-get install python3-pip elf2uf2;
             pip3 install setuptools --user ;

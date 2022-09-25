@@ -41,11 +41,7 @@ jobs:
           /sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_1.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :1 -ac -screen 0 1280x1024x16
           sleep 3
           export DISPLAY=:1.0
-
-          export PATH="${PATH}:${HOME}/bin"
-          export
-
-          curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh
+          curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=~/.local/bin
           wget http://downloads.arduino.cc/arduino-$ARDUINO_IDE_VERSION-linux64.tar.xz ;
           tar xf arduino-$ARDUINO_IDE_VERSION-linux64.tar.xz ;
           rm arduino-$ARDUINO_IDE_VERSION-linux64.tar.xz ;
@@ -81,3 +77,6 @@ jobs:
           if [[ "$BOARD" =~ "adafruit:nrf52:"      ]]; then
             arduino-cli compile -e -b --board $BOARD $PWD/software/firmware/source/SoftRF;
           fi ;
+
+/home/runner/:
+  local/bin:

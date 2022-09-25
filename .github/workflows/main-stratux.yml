@@ -43,6 +43,7 @@ jobs:
       - name: Run before_install
         run: |
           mkdir -p ~/.local/bin
+          sudo apt-get install git ;
           git clone https://github.com/microsoft/uf2
           curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=~/.local/bin sh ;
           if [[ "$BOARD" =~ "adafruit:nrf52:" ]]; then
@@ -74,5 +75,5 @@ jobs:
         run: |
           echo 'Building board ${BOARD}'
           arduino-cli compile -e -b $BOARD $PWD/software/firmware/source/SoftRF ;
-          ~/uf2/utils/uf2conv.py $PWD/software/firmware/source/SoftRF/build/adafruit.nrf52.pca10056/SoftRF.ino.hex -c -f 0xADA52840
+          $HOME/uf2/utils/uf2conv.py $PWD/software/firmware/source/SoftRF/build/adafruit.nrf52.pca10056/SoftRF.ino.hex -c -f 0xADA52840
           ls $PWD/software/firmware/source/SoftRF/build/adafruit.nrf52.pca10056/

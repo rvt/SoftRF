@@ -20,7 +20,11 @@ jobs:
 
     strategy:
       matrix:
-        board: ['esp32:esp32:esp32:PartitionScheme=min_spiffs,CPUFreq=80,FlashMode=dio,FlashFreq=80,FlashSize=4M,DebugLevel=none', 'adafruit:nrf52:pca10056', 'esp32:esp32:esp32s2', 'esp32:esp32:esp32s3']
+        board:
+          - 'esp32:esp32:esp32:PartitionScheme=min_spiffs,CPUFreq=80,FlashMode=dio,FlashFreq=80,FlashSize=4M,DebugLevel=none'
+          - 'adafruit:nrf52:pca10056'
+          - 'esp32:esp32:esp32s2'
+          - 'esp32:esp32:esp32s3'
 
     env:
       ARDUINO_IDE_VERSION: 1.8.13
@@ -39,6 +43,7 @@ jobs:
       - name: Run before_install
         run: |
           mkdir -p ~/.local/bin
+          git clone https://github.com/microsoft/uf2
           curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=~/.local/bin sh ;
           if [[ "$BOARD" =~ "adafruit:nrf52:" ]]; then
             sudo apt-get install python3-pip ;
@@ -67,9 +72,7 @@ jobs:
 
       - name: Run script
         run: |
-          if [[ "$BOARD" =~ "esp32:esp32:"        ]]; then
-            arduino-cli compile -e -b $BOARD $PWD/software/firmware/source/SoftRF ;
-          fi ;
-          if [[ "$BOARD" =~ "adafruit:nrf52:"      ]]; then
-            arduino-cli compile -e -b $BOARD $PWD/software/firmware/source/SoftRF ;
-          fi ;
+          echo 'Building board ${BOARD}'
+          arduino-cli compile -e -b $BOARD $PWD/software/firmware/source/SoftRF ;
+          ls $PWD/software/firmware/source/SoftRF/build/adafruit.nrf52.pca10056/
+          ~/uf2/utils/uf2conv.py $PWD/software/firmware/source/SoftRF/build/adafruit.nrf52.pca10056/SoftRF.ino.hex -c -f 0xADA52840

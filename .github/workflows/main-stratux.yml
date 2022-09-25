@@ -54,13 +54,12 @@ jobs:
             pip3 install adafruit-nrfutil --user ;
             pip3 install intelhex --user ;
           fi
+          echo "${HOME}/work/SoftRF/SoftRF/bin" >> $GITHUB_PATH
 
       - name: Run install
         run: |
           if [[ "$BOARD" =~ "esp32:esp32" ]]; then
             arduino-cli core install esp32:esp32 --additional-urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json ;
-            arduino --install-boards esp32:esp32:2.0.3 ;
-            arduino --board $BOARD --save-prefs ;
             cd $GITHUB_WORKSPACE ;
           fi
 

@@ -68,8 +68,8 @@ jobs:
       - name: Run script
         run: |
           if [[ "$BOARD" =~ "esp32:esp32:"        ]]; then
-            arduino-cli compile -e -b --board $BOARD $PWD/software/firmware/source/SoftRF;
+            arduino-cli compile -e -b $BOARD $PWD/software/firmware/source/SoftRF ;
           fi ;
           if [[ "$BOARD" =~ "adafruit:nrf52:"      ]]; then
-            arduino-cli compile -e -b --board $BOARD $PWD/software/firmware/source/SoftRF;
+            arduino-cli compile -e -b $BOARD $PWD/software/firmware/source/SoftRF ;
           fi ;

@@ -41,12 +41,7 @@ jobs:
           /sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_1.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :1 -ac -screen 0 1280x1024x16
           sleep 3
           export DISPLAY=:1.0
-          curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=~/.local/bin
-          wget http://downloads.arduino.cc/arduino-$ARDUINO_IDE_VERSION-linux64.tar.xz ;
-          tar xf arduino-$ARDUINO_IDE_VERSION-linux64.tar.xz ;
-          rm arduino-$ARDUINO_IDE_VERSION-linux64.tar.xz ;
-          sudo mv arduino-$ARDUINO_IDE_VERSION /usr/local/share/arduino ;
-          sudo ln -s /usr/local/share/arduino/arduino /usr/local/bin/arduino ;
+          curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=~/bin sh
           if [[ "$BOARD" =~ "adafruit:nrf52:" ]]; then
             sudo apt-get install python3-pip elf2uf2;
             pip3 install setuptools --user ;

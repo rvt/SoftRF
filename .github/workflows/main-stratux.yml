@@ -79,6 +79,6 @@ jobs:
             cd $GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/adafruit.nrf52.pca10056/
             ~/uf2/utils/uf2conv.py SoftRF.ino.hex -c -f 0xADA52840
             cd $GITHUB_WORKSPACE
-            ls $GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/esp32.esp32.esp32/ ;
+            ls $GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/adafruit.nrf52.pca10056/
           fi ;
 

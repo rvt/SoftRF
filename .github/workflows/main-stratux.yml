@@ -28,7 +28,6 @@ jobs:
 
     env:
       ARDUINO_IDE_VERSION: 1.8.13
-      ENERGIA_IDE_VERSION: 1.8.10E23
       BOARD: ${{ matrix.board }}
 
     # Steps represent a sequence of tasks that will be executed as part of the job
@@ -36,14 +35,11 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
 
-      #- name: Setup tmate session
-      #  uses: mxschmitt/action-tmate@v3
-
       # Runs a set of commands using the runners shell
       - name: Run before_install
         run: |
+          git clone https://github.com/microsoft/uf2 ~/uf2
           mkdir -p ~/.local/bin
-          git clone https://github.com/microsoft/uf2
           curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=~/.local/bin sh ;
           if [[ "$BOARD" =~ "adafruit:nrf52:" ]]; then
             sudo apt-get install python3-pip ;
@@ -55,7 +51,7 @@ jobs:
       - name: Run install
         run: |
           mkdir $HOME/Arduino ;
-          ln -s $PWD/software/firmware/source/libraries $HOME/Arduino/libraries ;
+          ln -s $GITHUB_WORKSPACE/software/firmware/source/libraries $HOME/Arduino/libraries ;
           
           if [[ "$BOARD" =~ "esp32:esp32" ]]; then
             arduino-cli core install esp32:esp32 --additional-urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json ;
@@ -73,6 +69,6 @@ jobs:
       - name: Run script
         run: |
           echo 'Building board ${BOARD}'
-          arduino-cli compile -e -b $BOARD $PWD/software/firmware/source/SoftRF ;
-          ~/uf2/utils/uf2conv.py $PWD/software/firmware/source/SoftRF/build/adafruit.nrf52.pca10056/SoftRF.ino.hex -c -f 0xADA52840
-          ls $PWD/software/firmware/source/SoftRF/build/adafruit.nrf52.pca10056/
+          arduino-cli compile -e -b $BOARD $GITHUB_WORKSPACE/software/firmware/source/SoftRF ;
+          ~/uf2/utils/uf2conv.py $GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/adafruit.nrf52.pca10056/SoftRF.ino.hex -c -f 0xADA52840
+          ls $GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/adafruit.nrf52.pca10056/

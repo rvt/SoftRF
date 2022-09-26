@@ -72,7 +72,7 @@ jobs:
           arduino-cli compile -e -b $BOARD $GITHUB_WORKSPACE/software/firmware/source/SoftRF
 
           if [[ "$BOARD" =~ "esp32:esp32:"        ]]; then
-            ls $GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/adafruit.nrf52.pca10056/
+            ls $GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/esp32.esp32.esp32/
           fi ;
 
           if [[ "$BOARD" =~ "adafruit:nrf52:"        ]]; then

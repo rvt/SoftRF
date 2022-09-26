@@ -72,13 +72,13 @@ jobs:
           arduino-cli compile -e -b $BOARD $GITHUB_WORKSPACE/software/firmware/source/SoftRF
 
           if [[ "$BOARD" =~ "esp32:esp32:"        ]]; then
-            ls $GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/esp32.esp32.esp32/
+            find $GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/
           fi ;
 
           if [[ "$BOARD" =~ "adafruit:nrf52:"        ]]; then
             cd $GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/adafruit.nrf52.pca10056/
             ~/uf2/utils/uf2conv.py SoftRF.ino.hex -c -f 0xADA52840
             cd $GITHUB_WORKSPACE
-            ls $GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/adafruit.nrf52.pca10056/
+            find $GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/
           fi ;
 

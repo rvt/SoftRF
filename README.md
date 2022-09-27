@@ -21,6 +21,9 @@ DIY, multi-functional, compatible, sub-1 GHz ISM band radio based proximity awar
 - when connecting SoftRF **via Bluetooth LE** with Stratux Europe Edition (beta version implemented in rvt's fork: https://github.com/rvt/stratux/tree/bluetooth-le-devices)
   - set "NMEA output" to Bluetooth (default)
 
+**LIMITATIONS**:
+- GPS update rate is limited to 1 Hz in SoftRF, which is good enough for Stratux except when using GPS as a pseudo AHRS
+
 ## Features
 
 * **Wearable**

@@ -12,7 +12,7 @@ DIY, multi-functional, compatible, sub-1 GHz ISM band radio based proximity awar
 - L76K GPS configuration (for **T-Echo**)
   - enable GSA, GSV, VTG
   - enable GPS, GLONASS and BEIDOU
-- disable LK8EX1 and LEGACY traffic messages
+- disable LK8EX1 and LEGACY traffic messages (to relax data rate over serial connection, Stratux receives LEGACY directly anyhow)
 
 **IMPORTANT**: after compiling/flashing, SoftRF needs to be configured as follows, using the respective method:
 - disable "NMEA sentences - Legacy"

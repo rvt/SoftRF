@@ -37,6 +37,7 @@
 #include <XPowersLib.h>
 
 #include "../system/SoC.h"
+#include "../system/Time.h"
 #include "../driver/Sound.h"
 #include "../driver/EEPROM.h"
 #include "../driver/RF.h"
@@ -282,6 +283,8 @@ static void ESP32_setup()
 
   if (hw_info.model == SOFTRF_MODEL_SKYWATCH) {
     esp32_board = ESP32_TTGO_T_WATCH;
+    hw_info.rtc = RTC_PCF8563;
+    hw_info.imu = ACC_BMA423;
 
     Wire1.begin(SOC_GPIO_PIN_TWATCH_SEN_SDA , SOC_GPIO_PIN_TWATCH_SEN_SCL);
     Wire1.beginTransmission(AXP202_SLAVE_ADDRESS);
@@ -500,12 +503,20 @@ static void ESP32_setup()
 #if ARDUINO_USB_CDC_ON_BOOT && (defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3))
   if (USB.manufacturerName(ESP32S2_Device_Manufacturer)) {
     char usb_serial_number[16];
+    uint16_t pid;
+
+    pid = (esp32_board == ESP32_TTGO_T_BEAM_SUPREME) ? SOFTRF_USB_PID_PRIME_MK3  :
+          (esp32_board == ESP32_S2_T8_V1_1         ) ? SOFTRF_USB_PID_WEBTOP     :
+          (esp32_board == ESP32_S3_DEVKIT          ) ? SOFTRF_USB_PID_STANDALONE :
+          USB_PID /* 0x1001 */ ;
 
     snprintf(usb_serial_number, sizeof(usb_serial_number),
              "%02X%02X%02X%02X%02X%02X",
              efuse_mac[0], efuse_mac[1], efuse_mac[2],
              efuse_mac[3], efuse_mac[4], efuse_mac[5]);
 
+    USB.VID(USB_VID); // USB_ESPRESSIF_VID = 0x303A
+    USB.PID(pid);
     USB.productName(esp32_board == ESP32_TTGO_T_BEAM_SUPREME ?
                     ESP32S3_Device_Model : ESP32S2_Device_Model);
     USB.firmwareVersion(ESP32S2_Device_Version);

@@ -9,16 +9,12 @@ DIY, multi-functional, compatible, sub-1 GHz ISM band radio based proximity awar
   - enable GSA, GSV, VTG
   - enable GPS, GALILEO, BEIDOU and SBAS
   - enable NMEA extended
+  - default connection with Stratux: **USB**
 - L76K GPS configuration (for **T-Echo**)
   - enable GSA, GSV, VTG
   - enable GPS, GLONASS and BEIDOU
+  - default connection with Stratux: **Bluetooth LE** (works only with rvt's Stratux fork: https://github.com/rvt/stratux/tree/bluetooth-le-devices)
 - disable LK8EX1 and LEGACY traffic messages (to relax data rate over serial connection, Stratux receives LEGACY directly anyhow)
-
-**IMPORTANT**: after compiling/flashing, SoftRF needs to be configured as follows, using the respective wireless configuration method (using WiFi for T-Beam or using Bluetooth LE for T-Echo):
-- when connecting SoftRF **via USB** with Stratux Europe Edition:
-  - set "NMEA output" to USB (default for **T-Beam**)
-- when connecting SoftRF **via Bluetooth LE** with Stratux Europe Edition (beta version implemented in rvt's fork: https://github.com/rvt/stratux/tree/bluetooth-le-devices)
-  - set "NMEA output" to Bluetooth (default for **T-Echo**)
 
 **LIMITATIONS**:
 - GPS update rate is limited to 1 Hz in SoftRF, which is good enough for Stratux except when using GPS as a pseudo AHRS

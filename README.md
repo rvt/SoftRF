@@ -14,7 +14,8 @@ DIY, multi-functional, compatible, sub-1 GHz ISM band radio based proximity awar
   - enable GSA, GSV, VTG
   - enable GPS, GLONASS and BEIDOU
   - default connection with Stratux: **Bluetooth LE** (works only with rvt's Stratux fork: https://github.com/rvt/stratux/tree/bluetooth-le-devices)
-- disable LK8EX1 and LEGACY traffic messages (to relax data rate over serial connection, Stratux receives LEGACY directly anyhow)
+- LK8EX1 and LEGACY traffic messages disabled (to relax data rate over serial connection, Stratux receives LEGACY directly anyhow)
+- WiFi disabled on ESP32 platform (T-Beam) to avoid conflicts with Stratux WiFi
 
 **LIMITATIONS**:
 - GPS update rate is limited to 1 Hz in SoftRF, which is good enough for Stratux except when using GPS as a pseudo AHRS

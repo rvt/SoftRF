@@ -409,6 +409,9 @@ struct rst_info {
 
 #define MakeFlashId(v,d)        ((v << 16) | d)
 
+#define QMC6310U_ADDRESS        (0x1C)
+#define QMI8658C_ADDRESS        (0x6B)
+
 /* Disable brownout detection (avoid unexpected reset on some boards) */
 #define ESP32_DISABLE_BROWNOUT_DETECTOR 0
 

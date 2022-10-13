@@ -248,6 +248,7 @@ enum
 	ACC_ADXL362,
 	IMU_ICM20948,
 	IMU_MPU9250,
+	IMU_QMI8658,
 };
 
 extern ufo_t ThisAircraft;

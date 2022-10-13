@@ -22,6 +22,7 @@
 #include <U8x8lib.h>
 
 #define SSD1306_OLED_I2C_ADDR   0x3C
+#define SH1106_OLED_I2C_ADDR    0x3C /* 0x3D */
 
 #define isTimeToOLED()          (millis() - OLEDTimeMarker > 500)
 
@@ -30,6 +31,8 @@ void OLED_loop(void);
 void OLED_fini(int);
 void OLED_info1(void);
 void OLED_Next_Page(void);
+
+extern U8X8 *u8x8;
 
 extern const char *ISO3166_CC[];
 extern const char SoftRF_text1[];

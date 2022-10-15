@@ -5,17 +5,22 @@ DIY, multi-functional, compatible, sub-1 GHz ISM band radio based proximity awar
 
 **IMPORTANT**: All modifications are provided only in the source code so you need to be familiar with Arduino to compile and flash it for your platform
 
-- u-blox GPS configurations (for **T-Beam**):
+**T-Beam:**
+- u-blox GPS configuration:
   - enable GSA, GSV, VTG
   - enable GPS, GALILEO, BEIDOU and SBAS
   - enable NMEA extended
-  - default connection with Stratux: **USB**
-- L76K GPS configuration (for **T-Echo**)
+- default connection with Stratux: **USB**
+- WiFi disabled to avoid conflicts with Stratux WiFi
+- LEGACY traffic messages over serial connection disabled (to relax data rate, Stratux receives LEGACY directly anyhow)
+
+**T-Echo:**
+- L76K GPS configuration:
   - enable GSA, GSV, VTG
   - enable GPS, GLONASS and BEIDOU
-  - default connection with Stratux: **Bluetooth LE** (works only with rvt's Stratux fork: https://github.com/rvt/stratux/tree/bluetooth-le-devices)
-- LK8EX1 and LEGACY traffic messages disabled (to relax data rate over serial connection, Stratux receives LEGACY directly anyhow)
-- WiFi disabled on ESP32 platform (T-Beam) to avoid conflicts with Stratux WiFi
+- default connection with Stratux: **USB**
+- optional connection with Stratux: **Bluetooth LE** (works only with rvt's Stratux fork: https://github.com/rvt/stratux/tree/bluetooth-le-devices, requires T-Echo settings change using NFC)
+- LK8EX1 and LEGACY traffic messages over serial connection disabled (to relax data rate, Stratux receives LEGACY directly anyhow)
 
 **LIMITATIONS**:
 - GPS update rate is limited to 1 Hz in SoftRF, which is good enough for Stratux except when using GPS as a pseudo AHRS

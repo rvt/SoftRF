@@ -24,7 +24,7 @@ DIY, multi-functional, compatible, sub-1 GHz ISM band radio based proximity awar
 
 **LIMITATIONS**:
 - GPS update rate is limited to 1 Hz in SoftRF, which is good enough for Stratux except when using GPS as a pseudo AHRS
-- the L76K only supports the NMEA "strict" protocol version, therefore some extended satellite information (like elevation, azimut and numbering) is not provided and therefore the GPS info page in Stratux is incomplete, e.g. BEIDOU satellites are missing but are in fact used and counted for "in solution"
+- the L76K only supports the NMEA "strict" protocol version, therefore some extended satellite information (like elevation, azimut and numbering) is not provided for some satellites and therefore the GPS info page in Stratux is incomplete, e.g. BEIDOU satellites are missing but are in fact used and counted for "in solution"
 - currently only the T-Echo as a Baro source for Stratux is supported
 
 ## Features

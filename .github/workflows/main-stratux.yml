@@ -4,7 +4,6 @@ name: SoftRF Stratux builds
 
 # Controls when the workflow will run
 on:
-  # Triggers the workflow on push or pull request events but only for the master branch
   push:
     branches: [ master ]
 
@@ -72,13 +71,32 @@ jobs:
           arduino-cli compile -e -b $BOARD $GITHUB_WORKSPACE/software/firmware/source/SoftRF
 
           if [[ "$BOARD" =~ "esp32:esp32:"        ]]; then
-            find $GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/
+            cd "$GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/esp32.esp32.$(cut -d':' -f3 <<< $BOARD)"
+            zip -r "SoftRF_$(cut -d':' -f3 <<< $BOARD)".zip . 
           fi ;
 
           if [[ "$BOARD" =~ "adafruit:nrf52:"        ]]; then
-            cd $GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/adafruit.nrf52.pca10056/
+            cd $GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/adafruit.nrf52.$(cut -d':' -f3 <<< $BOARD)
             ~/uf2/utils/uf2conv.py SoftRF.ino.hex -c -f 0xADA52840
-            cd $GITHUB_WORKSPACE
-            find $GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/
+            rm SoftRF.ino.zip "SoftRF_$(cut -d':' -f3 <<< $BOARD)".zip
           fi ;
 
+          cd $GITHUB_WORKSPACE
+          find $GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/
+
+#      - name: Save Release URL File for publish
+#        uses: actions/upload-artifact@v1
+#        with:
+#          name: release_url
+#          path: release_url.txt
+#
+#      - name: "Create release"
+#        uses: "marvinpinto/action-automatic-releases@latest"
+#          with:
+#            repo_token: "${{ secrets.GITHUB_TOKEN }}"
+#            automatic_release_tag: "latest"
+#            prerelease: true
+#            title: "Stratux Build"
+#            files: |
+#              SoftRF/SoftRF/software/firmware/source/SoftRF/build/adafruit.nrf52.pca10056/SoftRF.ino.zip
+#              SoftRF/SoftRF/software/firmware/source/SoftRF/build/esp32.esp32.esp32s2/SoftRF.ino.map

@@ -69,20 +69,22 @@ jobs:
         run: |
           echo 'Building board ${BOARD}'
           arduino-cli compile -e -b $BOARD $GITHUB_WORKSPACE/software/firmware/source/SoftRF
+          PART1=$(cut -d':' -f1 <<< $BOARD)
+          PART2=$(cut -d':' -f2 <<< $BOARD)
+          PART3=$(cut -d':' -f3 <<< $BOARD)
+          cd "$GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/$PART1.$PART2.$PART3"
 
           if [[ "$BOARD" =~ "esp32:esp32:"        ]]; then
-            cd "$GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/esp32.esp32.$(cut -d':' -f3 <<< $BOARD)"
-            zip -r "SoftRF_$(cut -d':' -f3 <<< $BOARD)".zip . 
+            zip -r "SoftRF_$PART3".zip . 
           fi ;
 
           if [[ "$BOARD" =~ "adafruit:nrf52:"        ]]; then
-            cd $GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/adafruit.nrf52.$(cut -d':' -f3 <<< $BOARD)
             ~/uf2/utils/uf2conv.py SoftRF.ino.hex -c -f 0xADA52840
-            rm SoftRF.ino.zip "SoftRF_$(cut -d':' -f3 <<< $BOARD)".zip
+            mv SoftRF.ino.zip SoftRF_$PART3.zip
           fi ;
 
-          cd $GITHUB_WORKSPACE
-          find $GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/
+          find .
+          cd "$GITHUB_WORKSPACE"
 
 #      - name: Save Release URL File for publish
 #        uses: actions/upload-artifact@v1

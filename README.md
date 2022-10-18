@@ -1,11 +1,14 @@
-# SoftRF &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [![Join the chat at https://gitter.im/lyusupov/SoftRF](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/lyusupov/SoftRF?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Build Status](https://github.com/lyusupov/SoftRF/actions/workflows/main.yml/badge.svg)](https://github.com/lyusupov/SoftRF/actions/workflows/main.yml "Build Status") 
-DIY, multi-functional, compatible, sub-1 GHz ISM band radio based proximity awareness system for general aviation.
+# SoftRF DIY - Stratux compatible fork
 
 ## Modifications in this fork enable SoftRF to work as a proper GPS and Baro source for Stratux
 
-**IMPORTANT**: All modifications are provided only in the source code so you need to be familiar with Arduino to compile and flash it for your platform
+**IMPORTANT**: All modifications are provided only in the source code so you need to be familiar with Arduino to compile and flash it for your platform. You need to install Arduino IDE (v1.8 or later) and add the following two entries into the Additional Board Manager URLs:
+- `https://adafruit.github.io/arduino-board-index/package_adafruit_index.json`
+- `https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json`
 
-**T-Beam:**
+For the T-Beam you need to select the `ESP32 Dev Module` board, for the T-Echo the `Nordic nRF52840 DK` board. For more details please read the related upstream WiKi section.
+
+**T-Beam modifications:**
 - u-blox GPS configuration:
   - enable GSA, GSV, VTG
   - enable GPS, GALILEO, BEIDOU and SBAS
@@ -14,7 +17,7 @@ DIY, multi-functional, compatible, sub-1 GHz ISM band radio based proximity awar
 - WiFi disabled to avoid conflicts with Stratux WiFi
 - LEGACY traffic messages over serial connection disabled (to relax data rate, Stratux receives LEGACY directly anyhow)
 
-**T-Echo:**
+**T-Echo modifications:**
 - L76K GPS configuration:
   - enable GSA, GSV, VTG
   - enable GPS, GLONASS and BEIDOU

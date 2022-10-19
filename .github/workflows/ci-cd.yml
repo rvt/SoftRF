@@ -18,6 +18,6 @@ jobs:
 
   staging:
     needs: build
-    uses: rvt/SoftRF/actions/workflows/ci-release.yml@arduino-cli
+    uses: rvt/SoftRF/.github/workflows/ci-release.yml@arduino-cli
     with:
       myName: "monaWeb"

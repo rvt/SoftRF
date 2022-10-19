@@ -19,8 +19,6 @@ jobs:
   deploy:
 
     name: Deploy to ${{ inputs.myName }}
-    environment:
-      myName: ${{ inputs.myName }}
 
     runs-on: ubuntu-latest
 

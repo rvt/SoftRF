@@ -9,6 +9,11 @@ on:
         required: true
         default: false
         type: boolean
+      myName:
+        description: "My Name test"
+        required: true
+        default: "Some other name"
+        type: string
 
 jobs:
   deploy:

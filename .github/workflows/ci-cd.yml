@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - arduino-cli
 
   workflow_dispatch:
 

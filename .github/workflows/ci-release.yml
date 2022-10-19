@@ -1,0 +1,24 @@
+name: Publish to Azure
+
+# Run on call from other workflow
+on:
+  workflow_call:
+    inputs:
+      envName:
+        description: "Would you like to release?"
+        required: true
+        default: false
+        type: boolean
+
+jobs:
+  deploy:
+
+    name: Deploy to ${{ inputs.myName }}
+    environment:
+      myName: ${{ inputs.myName }}
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Run a one-line script
+        run: echo Hello from Release Pipeline ${{ inputs.myName }}

@@ -23,5 +23,5 @@ jobs:
     uses: rvt/SoftRF/.github/workflows/ci-release.yml@arduino-cli
     with:
       myName: "monaWeb 4"
-      envName: '123'
+      envName: "foo"
 

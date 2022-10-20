@@ -16,8 +16,8 @@ on:
         type: string
 
 jobs:
-  deploy:
-
+  release:
+    environment: Release
     name: Deploy to ${{ inputs.myName }}
 
     runs-on: ubuntu-latest

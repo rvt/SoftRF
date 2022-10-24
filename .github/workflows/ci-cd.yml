@@ -21,7 +21,7 @@ jobs:
           - 'esp32:esp32:esp32s3:PartitionScheme=min_spiffs,CPUFreq=80,PSRAM=enabled,FlashMode=dio,FlashSize=4M,DebugLevel=none'
 
     steps:
-      - uses: .github/build-environment
+      - uses: ./.github/actions/build-environment
         with:
           board: ${{ matrix.board }}
 

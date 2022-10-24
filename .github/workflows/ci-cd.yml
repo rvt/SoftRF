@@ -27,26 +27,26 @@ jobs:
         with:
           board: ${{ matrix.board }}
 
-  - name: Run script
-      run: |
-        echo 'Building board ${BOARD}'
-        arduino-cli compile -e -b $BOARD $GITHUB_WORKSPACE/software/firmware/source/SoftRF
-        PART1=$(cut -d':' -f1 <<< $BOARD)
-        PART2=$(cut -d':' -f2 <<< $BOARD)
-        PART3=$(cut -d':' -f3 <<< $BOARD)
-        cd "$GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/$PART1.$PART2.$PART3"
-        
-        if [[ "$BOARD" =~ "esp32:esp32:" ]]; then
-          zip -r "SoftRF_$PART3".zip . 
-        fi ;
-        
-        if [[ "$BOARD" =~ "adafruit:nrf52:" ]]; then
-          ~/uf2/utils/uf2conv.py SoftRF.ino.hex -c -f 0xADA52840
-          mv SoftRF.ino.zip SoftRF_$PART3.zip
-        fi ;
-        
-        find .
-        cd "$GITHUB_WORKSPACE"
+      - name: Run script
+          run: |
+            echo 'Building board ${BOARD}'
+            arduino-cli compile -e -b $BOARD $GITHUB_WORKSPACE/software/firmware/source/SoftRF
+            PART1=$(cut -d':' -f1 <<< $BOARD)
+            PART2=$(cut -d':' -f2 <<< $BOARD)
+            PART3=$(cut -d':' -f3 <<< $BOARD)
+            cd "$GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/$PART1.$PART2.$PART3"
+            
+            if [[ "$BOARD" =~ "esp32:esp32:" ]]; then
+              zip -r "SoftRF_$PART3".zip . 
+            fi ;
+            
+            if [[ "$BOARD" =~ "adafruit:nrf52:" ]]; then
+              ~/uf2/utils/uf2conv.py SoftRF.ino.hex -c -f 0xADA52840
+              mv SoftRF.ino.zip SoftRF_$PART3.zip
+            fi ;
+            
+            find .
+            cd "$GITHUB_WORKSPACE"
 
   release:
     if: startsWith(github.event.ref, 'refs/tags/v')

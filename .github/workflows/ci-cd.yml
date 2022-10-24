@@ -21,7 +21,7 @@ jobs:
           - 'esp32:esp32:esp32s3:PartitionScheme=min_spiffs,CPUFreq=80,PSRAM=enabled,FlashMode=dio,FlashSize=4M,DebugLevel=none'
 
     steps:
-      - uses: rvt/SoftRF/.github/workflows/build-environment.yml@arduino-cli
+      - uses: .github/build-environment@v1
         with:
           board: ${{ matrix.board }}
 

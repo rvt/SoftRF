@@ -14,17 +14,20 @@ runs:
     - name: Install uf2
       shell: bash
       run: |
+        echo "Install uf2"
         git clone https://github.com/microsoft/uf2 ~/uf2
 
     - name: Install Arduino for ${{ inputs.board }}
       shell: bash
       run: |
+        echo "Install Arduino for ${{ inputs.board }}"
         mkdir -p ~/.local/bin
         curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=~/.local/bin sh
 
     - name: Install board nrfutil
       shell: bash
       run: |
+        echo "Install board nrfutil"
         if [[ "${{ inputs.board }}" =~ "adafruit:nrf52:" ]]; then
           sudo apt-get install python3-pip
           pip3 install setuptools --user
@@ -35,6 +38,7 @@ runs:
     - name: Install needed board ${{ inputs.board }}
       shell: bash
       run: |
+        echo "Install needed board ${{ inputs.board }}"
         export BOARD="${{ inputs.board }}"
         mkdir $HOME/Arduino
         ln -s $GITHUB_WORKSPACE/software/firmware/source/libraries $HOME/Arduino/libraries

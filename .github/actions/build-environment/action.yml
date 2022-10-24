@@ -22,8 +22,8 @@ runs:
       run: |
         echo "Install Arduino for ${{ inputs.board }}"
         mkdir -p ~/.local/bin
-        # version 0.28.0 gave me issues
-        curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/0.27.1/install.sh | BINDIR=~/.local/bin sh
+        # version 0.28.0 gave me issues so fixed fot 0.27.1 for now
+        curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=~/.local/bin sh -s 0.27.1
 
     - name: Install board nrfutil
       shell: bash

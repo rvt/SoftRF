@@ -128,7 +128,7 @@ Copyright (C) 2015-2022 &nbsp;&nbsp;&nbsp; Linar Yusupov\
 
 void handleSettings() {
 
-  size_t size = 5200;
+  size_t size = 5300;
   char *offset;
   size_t len = 0;
   char *Settings_temp = (char *) malloc(size);
@@ -351,6 +351,27 @@ void handleSettings() {
     len = strlen(offset);
     offset += len;
     size -= len;
+
+  } else if (SoC->id == SOC_ESP32S3) {
+
+    snprintf_P ( offset, size,
+      PSTR("\
+<tr>\
+<th align=left>Built-in Bluetooth</th>\
+<td align=right>\
+<select name='bluetooth'>\
+<option %s value='%d'>Off</option>\
+<option %s value='%d'>LE</option>\
+</select>\
+</td>\
+</tr>"),
+    (settings->bluetooth == BLUETOOTH_OFF ? "selected" : ""), BLUETOOTH_OFF,
+    (settings->bluetooth == BLUETOOTH_LE_HM10_SERIAL ? "selected" : ""), BLUETOOTH_LE_HM10_SERIAL
+    );
+
+    len = strlen(offset);
+    offset += len;
+    size -= len;
   }
 
   /* Common part 3 */
@@ -407,13 +428,22 @@ void handleSettings() {
   size -= len;
 
   /* SoC specific part 2 */
-  if (SoC->id == SOC_ESP32) {
+  if (SoC->id == SOC_ESP32 || SoC->id == SOC_ESP32S3) {
     snprintf_P ( offset, size,
       PSTR("\
 <option %s value='%d'>TCP</option>\
 <option %s value='%d'>Bluetooth</option>"),
-    (settings->nmea_out == NMEA_TCP       ? "selected" : ""), NMEA_TCP,
-    (settings->nmea_out == NMEA_BLUETOOTH ? "selected" : ""), NMEA_BLUETOOTH);
+      (settings->nmea_out == NMEA_TCP       ? "selected" : ""), NMEA_TCP,
+      (settings->nmea_out == NMEA_BLUETOOTH ? "selected" : ""), NMEA_BLUETOOTH);
+
+    len = strlen(offset);
+    offset += len;
+    size -= len;
+  }
+  if (SoC->id == SOC_ESP32S2 || SoC->id == SOC_ESP32S3) {
+    snprintf_P ( offset, size,
+      PSTR("<option %s value='%d'>USB</option>"),
+      (settings->nmea_out == NMEA_USB       ? "selected" : ""), NMEA_USB);
 
     len = strlen(offset);
     offset += len;
@@ -442,11 +472,19 @@ void handleSettings() {
   size -= len;
 
   /* SoC specific part 3 */
-  if (SoC->id == SOC_ESP32) {
+  if (SoC->id == SOC_ESP32 || SoC->id == SOC_ESP32S3) {
     snprintf_P ( offset, size,
-      PSTR("\
-<option %s value='%d'>Bluetooth</option>"),
-    (settings->gdl90 == GDL90_BLUETOOTH ? "selected" : ""), GDL90_BLUETOOTH);
+      PSTR("<option %s value='%d'>Bluetooth</option>"),
+      (settings->gdl90 == GDL90_BLUETOOTH ? "selected" : ""), GDL90_BLUETOOTH);
+
+    len = strlen(offset);
+    offset += len;
+    size -= len;
+  }
+  if (SoC->id == SOC_ESP32S2 || SoC->id == SOC_ESP32S3) {
+    snprintf_P ( offset, size,
+      PSTR("<option %s value='%d'>USB</option>"),
+      (settings->gdl90 == GDL90_USB       ? "selected" : ""), GDL90_USB);
 
     len = strlen(offset);
     offset += len;
@@ -473,11 +511,19 @@ void handleSettings() {
   size -= len;
 
   /* SoC specific part 4 */
-  if (SoC->id == SOC_ESP32) {
+  if (SoC->id == SOC_ESP32 || SoC->id == SOC_ESP32S3) {
     snprintf_P ( offset, size,
-      PSTR("\
-<option %s value='%d'>Bluetooth</option>"),
-    (settings->d1090 == D1090_BLUETOOTH ? "selected" : ""), D1090_BLUETOOTH);
+      PSTR("<option %s value='%d'>Bluetooth</option>"),
+      (settings->d1090 == D1090_BLUETOOTH ? "selected" : ""), D1090_BLUETOOTH);
+
+    len = strlen(offset);
+    offset += len;
+    size -= len;
+  }
+  if (SoC->id == SOC_ESP32S2 || SoC->id == SOC_ESP32S3) {
+    snprintf_P ( offset, size,
+      PSTR("<option %s value='%d'>USB</option>"),
+      (settings->d1090 == D1090_USB       ? "selected" : ""), D1090_USB);
 
     len = strlen(offset);
     offset += len;

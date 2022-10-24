@@ -21,11 +21,11 @@ jobs:
           - 'esp32:esp32:esp32s3:PartitionScheme=min_spiffs,CPUFreq=80,PSRAM=enabled,FlashMode=dio,FlashSize=4M,DebugLevel=none'
 
     steps:
+      - uses: actions/checkout@v2
+
       - uses: ./.github/actions/build-environment
         with:
           board: ${{ matrix.board }}
-
-      - uses: actions/checkout@v2
 
       - name: Run a one-line script
         run: echo Hello from Build Pipeline ${{ matrix.board }}

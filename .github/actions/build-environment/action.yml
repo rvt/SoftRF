@@ -12,6 +12,7 @@ runs:
   using: "composite"
   steps:
     - name: Download and install Arduino for ${{ inputs.board }}
+      shell: bash
       run: |
         export BOARD="${{ inputs.board }}"
         git clone https://github.com/microsoft/uf2 ~/uf2
@@ -25,6 +26,7 @@ runs:
         fi
 
     - name: Install needed board ${{ inputs.board }}
+      shell: bash
       run: |
         export BOARD="${{ inputs.board }}"
         mkdir $HOME/Arduino

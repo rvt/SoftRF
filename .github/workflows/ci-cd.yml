@@ -19,8 +19,6 @@ jobs:
           - 'adafruit:nrf52:pca10056'
           - 'esp32:esp32:esp32s2:PartitionScheme=min_spiffs,CPUFreq=80,PSRAM=enabled,FlashMode=dio,FlashSize=4M,DebugLevel=none'
           - 'esp32:esp32:esp32s3:PartitionScheme=min_spiffs,CPUFreq=80,PSRAM=enabled,FlashMode=dio,FlashSize=4M,DebugLevel=none'
-    env:
-      BOARD: ${{ matrix.board }}
 
     steps:
       - uses: actions/checkout@v2
@@ -32,19 +30,18 @@ jobs:
       - name: Build SoftRF for platform ${{ matrix.board }}
 #        shell: bash
         run: |
-          BOARD="${{ matrix.board }}"
-          echo 'Building board ${BOARD} -- ${{ matrix.board }}'
-          arduino-cli compile -e -b $BOARD $GITHUB_WORKSPACE/software/firmware/source/SoftRF
-          PART1=$(cut -d':' -f1 <<< $BOARD)
-          PART2=$(cut -d':' -f2 <<< $BOARD)
-          PART3=$(cut -d':' -f3 <<< $BOARD)
+          echo 'Building board ${{ matrix.board }} -- ${{ matrix.board }}'
+          arduino-cli compile -e -b ${{ matrix.board }} $GITHUB_WORKSPACE/software/firmware/source/SoftRF
+          PART1=$(cut -d':' -f1 <<< ${{ matrix.board }})
+          PART2=$(cut -d':' -f2 <<< ${{ matrix.board }})
+          PART3=$(cut -d':' -f3 <<< ${{ matrix.board }})
           cd "$GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/$PART1.$PART2.$PART3"
           
-          if [[ "$BOARD" =~ "esp32:esp32:"        ]]; then
+          if [[ "${{ matrix.board }}" =~ "esp32:esp32:"        ]]; then
             zip -r "SoftRF_$PART3".zip . 
           fi ;
           
-          if [[ "$BOARD" =~ "adafruit:nrf52:"        ]]; then
+          if [[ "${{ matrix.board }}" =~ "adafruit:nrf52:"        ]]; then
             ~/uf2/utils/uf2conv.py SoftRF.ino.hex -c -f 0xADA52840
             mv SoftRF.ino.zip SoftRF_$PART3.zip
           fi ;

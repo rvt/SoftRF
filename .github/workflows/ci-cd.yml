@@ -12,11 +12,23 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        board:
+          - 'esp32:esp32:esp32:PartitionScheme=min_spiffs,CPUFreq=80,PSRAM=enabled,FlashFreq=80,FlashMode=dio,FlashSize=4M,DebugLevel=none'
+          - 'adafruit:nrf52:pca10056'
+          - 'esp32:esp32:esp32s2:PartitionScheme=min_spiffs,CPUFreq=80,PSRAM=enabled,FlashMode=dio,FlashSize=4M,DebugLevel=none'
+          - 'esp32:esp32:esp32s3:PartitionScheme=min_spiffs,CPUFreq=80,PSRAM=enabled,FlashMode=dio,FlashSize=4M,DebugLevel=none'
+
     steps:
+      - uses: rvt/SoftRF/.github/workflows/build-environment.yml@arduino-cli
+        with:
+          board: ${{ matrix.board }}
+
       - uses: actions/checkout@v2
 
       - name: Run a one-line script
-        run: echo Hello from Build Pipeline
+        run: echo Hello from Build Pipeline ${{ matrix.board }}
 
   release:
     if: startsWith(github.event.ref, 'refs/tags/v')

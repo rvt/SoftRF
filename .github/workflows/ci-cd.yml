@@ -50,7 +50,12 @@ jobs:
           
           find .
           cd "$GITHUB_WORKSPACE"
-  
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: SoftRF_$PART3.zip
+          path: "$GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/**/*.zip"
+          if-no-files-found: error
 
   release:
     if: startsWith(github.event.ref, 'refs/tags/v')

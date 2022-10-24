@@ -25,7 +25,7 @@ runs:
         # version 0.28.0 gave me issues so fixed fot 0.27.1 for now
         curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=~/.local/bin sh -s 0.27.1
 
-    - name: Install board nrfutil
+    - name: Install platform python nrfutil
       shell: bash
       run: |
         echo "Install board nrfutil"
@@ -36,10 +36,10 @@ runs:
           pip3 install intelhex --user
         fi
 
-    - name: Install needed board ${{ inputs.board }}
+    - name: Install platform ${{ inputs.board }}
       shell: bash
       run: |
-        echo "Install needed board ${{ inputs.board }}"
+        echo "Install platform ${{ inputs.board }}"
         export BOARD="${{ inputs.board }}"
         mkdir $HOME/Arduino
         ln -s $GITHUB_WORKSPACE/software/firmware/source/libraries $HOME/Arduino/libraries

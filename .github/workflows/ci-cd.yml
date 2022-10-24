@@ -29,8 +29,8 @@ jobs:
         with:
           board: ${{ matrix.board }}
 
-      - name: Run script
-        shell: bash
+      - name: Build SoftRF for platform ${{ matrix.board }}
+#        shell: bash
         run: |
           export BOARD=${{ matrix.board }}
           echo 'Building board ${BOARD}'

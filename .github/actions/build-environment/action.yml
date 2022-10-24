@@ -11,14 +11,21 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Download and install Arduino for ${{ inputs.board }}
+    - name: Install uf2
       shell: bash
       run: |
-        export BOARD="${{ inputs.board }}"
         git clone https://github.com/microsoft/uf2 ~/uf2
+
+    - name: Install Arduino for ${{ inputs.board }}
+      shell: bash
+      run: |
         mkdir -p ~/.local/bin
         curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=~/.local/bin sh
-        if [[ "$BOARD" =~ "adafruit:nrf52:" ]]; then
+
+    - name: Install board nrfutil
+      shell: bash
+      run: |
+        if [[ "${{ inputs.board }}" =~ "adafruit:nrf52:" ]]; then
           sudo apt-get install python3-pip
           pip3 install setuptools --user
           pip3 install adafruit-nrfutil --user

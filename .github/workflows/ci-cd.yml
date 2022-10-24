@@ -33,7 +33,7 @@ jobs:
 #        shell: bash
         run: |
           BOARD=${{ matrix.board }}
-          echo 'Building board ${BOARD} - ${{ matrix.board }}'
+          echo 'Building board ${BOARD} -- ${{ matrix.board }}'
           arduino-cli compile -e -b $BOARD $GITHUB_WORKSPACE/software/firmware/source/SoftRF
           PART1=$(cut -d':' -f1 <<< $BOARD)
           PART2=$(cut -d':' -f2 <<< $BOARD)

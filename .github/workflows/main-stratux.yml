@@ -39,7 +39,9 @@ jobs:
         run: |
           git clone https://github.com/microsoft/uf2 ~/uf2
           mkdir -p ~/.local/bin
-          curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=~/.local/bin sh
+          # version 0.28.0 gave me issues
+          curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/0.27.0/install.sh | BINDIR=~/.local/bin sh
+          #curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=~/.local/bin sh
           if [[ "$BOARD" =~ "adafruit:nrf52:" ]]; then
             sudo apt-get install python3-pip
             pip3 install setuptools --user

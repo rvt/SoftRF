@@ -30,11 +30,11 @@ jobs:
       - name: Build SoftRF for platform ${{ matrix.board }}
 #        shell: bash
         run: |
-          echo 'Building board ${{ matrix.board }} -- ${{ matrix.board }}'
-          arduino-cli compile -e -b ${{ matrix.board }} $GITHUB_WORKSPACE/software/firmware/source/SoftRF
-          PART1=$(cut -d':' -f1 <<< ${{ matrix.board }})
-          PART2=$(cut -d':' -f2 <<< ${{ matrix.board }})
-          PART3=$(cut -d':' -f3 <<< ${{ matrix.board }})
+          echo 'Building board ${{ matrix.board }}'
+          arduino-cli compile -e -b "${{ matrix.board }}" $GITHUB_WORKSPACE/software/firmware/source/SoftRF
+          PART1=$(cut -d':' -f1 <<< "${{ matrix.board }}")
+          PART2=$(cut -d':' -f2 <<< "${{ matrix.board }}")
+          PART3=$(cut -d':' -f3 <<< "${{ matrix.board }}")
           cd "$GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/$PART1.$PART2.$PART3"
           
           if [[ "${{ matrix.board }}" =~ "esp32:esp32:"        ]]; then

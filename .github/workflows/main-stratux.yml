@@ -52,7 +52,8 @@ jobs:
         run: |
           mkdir $HOME/Arduino
           ln -s $GITHUB_WORKSPACE/software/firmware/source/libraries $HOME/Arduino/libraries
-          
+          arduino-cli version
+
           if [[ "$BOARD" =~ "esp32:esp32" ]]; then
             arduino-cli core install esp32:esp32 --additional-urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
             cd $GITHUB_WORKSPACE

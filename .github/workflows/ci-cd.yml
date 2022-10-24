@@ -31,12 +31,15 @@ jobs:
 #        shell: bash
         run: |
           echo 'Building board ${{ matrix.board }}'
-          arduino-cli compile -e -b "${{ matrix.board }}" $GITHUB_WORKSPACE/software/firmware/source/SoftRF
           PART1=$(cut -d':' -f1 <<< "${{ matrix.board }}")
           PART2=$(cut -d':' -f2 <<< "${{ matrix.board }}")
           PART3=$(cut -d':' -f3 <<< "${{ matrix.board }}")
-          cd "$GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/$PART1.$PART2.$PART3"
+          # Get version and compile
+          arduino-cli version
+          arduino-cli compile -e -b "${{ matrix.board }}" $GITHUB_WORKSPACE/software/firmware/source/SoftRF
           
+          # Zip it up
+          cd "$GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/$PART1.$PART2.$PART3"          
           if [[ "${{ matrix.board }}" =~ "esp32:esp32:"        ]]; then
             zip -r "SoftRF_$PART3".zip . 
           fi ;

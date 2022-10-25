@@ -16,9 +16,9 @@ jobs:
       matrix:
         board:
           - 'esp32:esp32:esp32:PartitionScheme=min_spiffs,CPUFreq=80,PSRAM=enabled,FlashFreq=80,FlashMode=dio,FlashSize=4M,DebugLevel=none'
-#          - 'adafruit:nrf52:pca10056'
-#          - 'esp32:esp32:esp32s2:PartitionScheme=min_spiffs,CPUFreq=80,PSRAM=enabled,FlashMode=dio,FlashSize=4M,DebugLevel=none'
-#          - 'esp32:esp32:esp32s3:PartitionScheme=min_spiffs,CPUFreq=80,PSRAM=enabled,FlashMode=dio,FlashSize=4M,DebugLevel=none'
+          - 'adafruit:nrf52:pca10056'
+          - 'esp32:esp32:esp32s2:PartitionScheme=min_spiffs,CPUFreq=80,PSRAM=enabled,FlashMode=dio,FlashSize=4M,DebugLevel=none'
+          - 'esp32:esp32:esp32s3:PartitionScheme=min_spiffs,CPUFreq=80,PSRAM=enabled,FlashMode=dio,FlashSize=4M,DebugLevel=none'
 
     env:
       ARDUINO_IDE_VERSION: 1.8.13
@@ -32,7 +32,6 @@ jobs:
           board: ${{ matrix.board }}
 
       - name: Build SoftRF for platform ${{ matrix.board }}
-#        shell: bash
         run: |
           echo 'Building board ${{ matrix.board }}'
           PART1=$(cut -d':' -f1 <<< "${{ matrix.board }}")

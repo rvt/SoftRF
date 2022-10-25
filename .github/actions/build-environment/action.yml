@@ -36,7 +36,8 @@ runs:
           pip3 install intelhex --user
         fi
 
-    - name: Run install
+    - name: Install platform libraries
+      shell: bash
       run: |
         mkdir $HOME/Arduino
         ln -s $GITHUB_WORKSPACE/software/firmware/source/libraries $HOME/Arduino/libraries

@@ -57,7 +57,6 @@ jobs:
 
       - uses: actions/upload-artifact@v3
         with:
-          name: SoftRF_$PART3.zip
           path: "software/firmware/source/SoftRF/build/**/*.zip"
           if-no-files-found: error
 

@@ -408,9 +408,6 @@ struct rst_info {
 
 #define MakeFlashId(v,d)        ((v << 16) | d)
 
-#define QMC6310U_ADDRESS        (0x1C)
-#define QMI8658C_ADDRESS        (0x6B)
-
 #define MPU6886_REG_PWR_MGMT_1  (0x6B)
 #define MPU6886_REG_WHOAMI      (0x75)
 #define MPU9250_REG_PWR_MGMT_1  (0x6B)
@@ -433,7 +430,7 @@ struct rst_info {
 #define USE_TIME_SLOTS
 
 /* Experimental */
-//#define USE_BLE_MIDI
+#define USE_BLE_MIDI
 //#define USE_GDL90_MSL
 #define USE_OGN_ENCRYPTION
 
@@ -451,6 +448,7 @@ struct rst_info {
 #define EXCLUDE_CC13XX
 #define EXCLUDE_SOFTRF_HEARTBEAT
 #define EXCLUDE_LK8EX1
+//#define EXCLUDE_IMU
 
 #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3)
 #define EXCLUDE_NRF905

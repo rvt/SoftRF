@@ -22,8 +22,9 @@
 #include <SPI.h>
 #include <esp_err.h>
 #include <esp_wifi.h>
-#if !defined(CONFIG_IDF_TARGET_ESP32S2) && !defined(CONFIG_IDF_TARGET_ESP32S3)
+#if !defined(CONFIG_IDF_TARGET_ESP32S2)
 #include <esp_bt.h>
+#include <BLEDevice.h>
 #endif /* CONFIG_IDF_TARGET_ESP32S2 */
 #include <soc/rtc_cntl_reg.h>
 #include <soc/efuse_reg.h>
@@ -240,6 +241,14 @@ static int32_t ESP32_msc_write_cb (uint32_t lba, uint32_t offset, uint8_t* buffe
 
   return rval;
 }
+
+#include "SensorQMC6310.hpp"
+SensorQMC6310 mag;
+
+#if !defined(EXCLUDE_IMU)
+#include "SensorQMI8658.hpp"
+SensorQMI8658 imu;
+#endif /* EXCLUDE_IMU */
 #endif /* CONFIG_IDF_TARGET_ESP32S3 */
 
 #if defined(ENABLE_D1090_INPUT)
@@ -578,14 +587,22 @@ static void ESP32_setup()
       /* wait until every LDO voltage will settle down */
       delay(200);
 
+#if 0
       Wire.begin(SOC_GPIO_PIN_S3_SDA, SOC_GPIO_PIN_S3_SCL);
-      Wire.beginTransmission(QMC6310U_ADDRESS);
+      Wire.beginTransmission(QMC6310_SLAVE_ADDRESS);
       if (Wire.endTransmission() == 0) {
         hw_info.mag = MAG_QMC6310;
       }
       WIRE_FINI(Wire);
+#else
+      bool has_qmc = mag.begin(Wire, QMC6310_SLAVE_ADDRESS,
+                               SOC_GPIO_PIN_S3_SDA, SOC_GPIO_PIN_S3_SCL);
+      mag.deinit(); WIRE_FINI(Wire);
+      hw_info.mag  = has_qmc ? MAG_QMC6310 : hw_info.mag;
+#endif
 
 #if !defined(EXCLUDE_IMU)
+#if 0
       uSD_SPI.begin(SOC_GPIO_PIN_S3_IMU_SCK,
                     SOC_GPIO_PIN_S3_IMU_MISO,
                     SOC_GPIO_PIN_S3_IMU_MOSI,
@@ -596,7 +613,7 @@ static void ESP32_setup()
       digitalWrite(SOC_GPIO_PIN_S3_IMU_SS, HIGH);
 
       delay(50);
-#if 0
+
       uSD_SPI.beginTransaction(SPISettings(1000000, MSBFIRST, SPI_MODE0));
       digitalWrite(SOC_GPIO_PIN_S3_IMU_SS, LOW);
 
@@ -608,7 +625,7 @@ static void ESP32_setup()
       uSD_SPI.endTransaction();
 
       delay(50);
-#endif
+
       uSD_SPI.beginTransaction(SPISettings(1000000, MSBFIRST, SPI_MODE0));
       digitalWrite(SOC_GPIO_PIN_S3_IMU_SS, LOW);
 
@@ -617,6 +634,15 @@ static void ESP32_setup()
 
       digitalWrite(SOC_GPIO_PIN_S3_IMU_SS, HIGH);
       uSD_SPI.endTransaction();
+#else
+      bool has_qmi = imu.begin(SOC_GPIO_PIN_S3_IMU_SS,
+                               SOC_GPIO_PIN_S3_IMU_MOSI,
+                               SOC_GPIO_PIN_S3_IMU_MISO,
+                               SOC_GPIO_PIN_S3_IMU_SCK,
+                               uSD_SPI);
+      imu.deinit();
+      hw_info.imu  = has_qmi ? IMU_QMI8658 : hw_info.imu;
+#endif
 
       if (hw_info.imu == IMU_NONE) {
         uSD_SPI.beginTransaction(SPISettings(1000000, MSBFIRST, SPI_MODE3));
@@ -1334,8 +1360,6 @@ static long ESP32_random(long howsmall, long howBig)
 }
 
 #if !defined(CONFIG_IDF_TARGET_ESP32S2) && defined(USE_BLE_MIDI)
-#include <BLEDevice.h>
-
 extern bool deviceConnected;
 extern BLECharacteristic* pMIDICharacteristic;
 

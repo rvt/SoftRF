@@ -50,7 +50,7 @@ jobs:
           arduino-cli version
           arduino-cli compile -e -b "${{ matrix.board }}" $GITHUB_WORKSPACE/software/firmware/source/SoftRF
 
-      - name: List
+      - name: List generated files
         run: |
           find "$GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/"
 
@@ -60,18 +60,14 @@ jobs:
           cd "$GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/${{ matrix.path }}"          
           ~/uf2/utils/uf2conv.py SoftRF.ino.hex -c -f 0xADA52840
           mv flash.uf2 SoftRF.uf2
+          # Remove files that we do not need for uf2 targets
           shopt -s extglob
           rm -v !("SoftRF.uf2")
 
-      - name: Rename
+      - name: Rename before artifact upload
         run: |
           cd "$GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/${{ matrix.path }}"
           rename -v 's/SoftRF/${{ matrix.artifact }}/' SoftRF*
-
-      - name: List
-        run: |
-          find "$GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/"
-          cd "$GITHUB_WORKSPACE"
 
       - uses: actions/upload-artifact@v3
         with:

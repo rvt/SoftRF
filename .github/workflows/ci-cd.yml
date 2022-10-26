@@ -34,10 +34,10 @@ jobs:
       ARTIFACT: ${{ matrix.artifact }}
 
     steps:
-      - uses: actions/checkout@v3
-
       - name: Install rename
         run: sudo apt-get install -y rename
+
+      - uses: actions/checkout@v3
 
       - uses: ./.github/actions/build-environment
         with:
@@ -60,6 +60,7 @@ jobs:
           cd "$GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/${{ matrix.path }}"          
           ~/uf2/utils/uf2conv.py SoftRF.ino.hex -c -f 0xADA52840
           mv flash.uf2 SoftRF.uf2
+          shopt -s extglob
           rm -v !("SoftRF.uf2")
 
       - name: Rename

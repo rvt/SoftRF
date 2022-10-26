@@ -1,8 +1,8 @@
 inputs:
-#  arduino_ide_version:
-#        description: "Arduino IDE version"
-#       default: "1.8.13"
-#        type: string
+  #  arduino_ide_version:
+  #        description: "Arduino IDE version"
+  #       default: "1.8.13"
+  #        type: string
   board:
     description: "Board to install"
     required: true
@@ -30,28 +30,28 @@ runs:
       shell: bash
       run: |
         echo "Install board nrfutil"
-        if [[ "${{ inputs.board }}" =~ "adafruit:nrf52:" ]]; then
-          sudo apt-get install python3-pip
-          pip3 install setuptools --user
-          pip3 install adafruit-nrfutil --user
-          pip3 install intelhex --user
-        fi
+        sudo apt-get install python3-pip
+        pip3 install setuptools --user
+        pip3 install adafruit-nrfutil --user
+        pip3 install intelhex --user
 
-    - name: Install platform libraries
+    - name: Install platform libraries esp32
+      if: startsWith(inputs.board, 'esp32:esp32:')
       shell: bash
       run: |
         mkdir $HOME/Arduino
         ln -s $GITHUB_WORKSPACE/software/firmware/source/libraries $HOME/Arduino/libraries
-        arduino-cli version
-        
-        if [[ "$BOARD" =~ "esp32:esp32" ]]; then
-          arduino-cli core install esp32:esp32 --additional-urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
-        fi
-        
-        if [[ "$BOARD" =~ "adafruit:nrf52:" ]]; then
-          arduino-cli core install adafruit:nrf52 --additional-urls https://adafruit.github.io/arduino-board-index/package_adafruit_index.json
-          if [[ ! -f ~/.local/bin/adafruit-nrfutil ]]; then
-            ln -s /bin/true ~/.local/bin/adafruit-nrfutil
-          fi
+        arduino-cli core install esp32:esp32 --additional-urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+        cd $GITHUB_WORKSPACE
+
+    - name: Install platform libraries nrf52
+      if: startsWith(inputs.board, 'adafruit:nrf52:')
+      shell: bash
+      run: |
+        mkdir $HOME/Arduino
+        ln -s $GITHUB_WORKSPACE/software/firmware/source/libraries $HOME/Arduino/libraries
+        arduino-cli core install adafruit:nrf52 --additional-urls https://adafruit.github.io/arduino-board-index/package_adafruit_index.json
+        if [[ ! -f ~/.local/bin/adafruit-nrfutil ]]; then
+          ln -s /bin/true ~/.local/bin/adafruit-nrfutil
         fi
         cd $GITHUB_WORKSPACE

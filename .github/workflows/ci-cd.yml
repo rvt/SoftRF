@@ -64,7 +64,7 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.artifact }}
-          path: "software/firmware/source/SoftRF/build/**/*.zip"
+          path: "software/firmware/source/SoftRF/build/${{ matrix.path }}/"
           if-no-files-found: error
 
   release:

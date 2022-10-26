@@ -26,6 +26,7 @@ runs:
         curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=~/.local/bin sh -s 0.27.1
 
     - name: Install platform python nrfutil
+      if: startsWith(inputs.board, 'adafruit:nrf52:')
       shell: bash
       run: |
         echo "Install board nrfutil"

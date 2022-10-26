@@ -14,15 +14,24 @@ jobs:
 
     strategy:
       matrix:
-        board:
-          - 'esp32:esp32:esp32:PartitionScheme=min_spiffs,CPUFreq=80,PSRAM=enabled,FlashFreq=80,FlashMode=dio,FlashSize=4M,DebugLevel=none'
-          - 'adafruit:nrf52:pca10056'
-          - 'esp32:esp32:esp32s2:PartitionScheme=min_spiffs,CPUFreq=80,PSRAM=enabled,FlashMode=dio,FlashSize=4M,DebugLevel=none'
-          - 'esp32:esp32:esp32s3:PartitionScheme=min_spiffs,CPUFreq=80,PSRAM=enabled,FlashMode=dio,FlashSize=4M,DebugLevel=none'
+        include:
+          - board: 'esp32:esp32:esp32:PartitionScheme=min_spiffs,CPUFreq=80,PSRAM=enabled,FlashFreq=80,FlashMode=dio,FlashSize=4M,DebugLevel=none'
+            artifact: 'SoftRF-esp32.zip'
+            path: 'esp32.esp32.esp32'
+          - board: 'adafruit:nrf52:pca10056'
+            artifact: 'SoftRF-nrf52.zip'
+            path: 'adafruit.nrf52.pca10056'
+          - board: 'esp32:esp32:esp32s2:PartitionScheme=min_spiffs,CPUFreq=80,PSRAM=enabled,FlashMode=dio,FlashSize=4M,DebugLevel=none'
+            artifact: 'SoftRF-esp32s.zip'
+            path: 'esp32.esp32.esp32s2'
+          - board: 'esp32:esp32:esp32s3:PartitionScheme=min_spiffs,CPUFreq=80,PSRAM=enabled,FlashMode=dio,FlashSize=4M,DebugLevel=none'
+            artifact: 'SoftRF-esp32s3.zip'
+            path: 'esp32.esp32.esp32s3'
 
     env:
       ARDUINO_IDE_VERSION: 1.8.13
       BOARD: ${{ matrix.board }}
+      ARTIFACT: ${{ matrix.artifact }}
 
     steps:
       - uses: actions/checkout@v2
@@ -34,22 +43,19 @@ jobs:
       - name: Build SoftRF for platform ${{ matrix.board }}
         run: |
           echo 'Building board ${{ matrix.board }}'
-          PART1=$(cut -d':' -f1 <<< "${{ matrix.board }}")
-          PART2=$(cut -d':' -f2 <<< "${{ matrix.board }}")
-          PART3=$(cut -d':' -f3 <<< "${{ matrix.board }}")
           # Get version and compile
           arduino-cli version
           arduino-cli compile -e -b "${{ matrix.board }}" $GITHUB_WORKSPACE/software/firmware/source/SoftRF
           
           # Zip it up
-          cd "$GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/$PART1.$PART2.$PART3"          
-          if [[ "${{ matrix.board }}" =~ "esp32:esp32:"        ]]; then
-            zip -r "SoftRF_$PART3".zip . 
+          cd "$GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/${{ matrix.path }}"          
+          if [[ "${{ matrix.board }}" =~ "esp32:esp32:" ]]; then
+            zip -r ${{ matrix.artifact }} . 
           fi ;
           
-          if [[ "${{ matrix.board }}" =~ "adafruit:nrf52:"        ]]; then
+          if [[ "${{ matrix.board }}" =~ "adafruit:nrf52:" ]]; then
             ~/uf2/utils/uf2conv.py SoftRF.ino.hex -c -f 0xADA52840
-            mv SoftRF.ino.zip SoftRF_$PART3.zip
+            mv SoftRF.ino.zip ${{ matrix.artifact }}
           fi ;
           
           find "$GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/"
@@ -57,6 +63,7 @@ jobs:
 
       - uses: actions/upload-artifact@v3
         with:
+          name: ${{ matrix.artifact }}
           path: "software/firmware/source/SoftRF/build/**/*.zip"
           if-no-files-found: error
 

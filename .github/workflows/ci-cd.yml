@@ -36,6 +36,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Install rename
+        run: sudo apt-get install -y rename
+
       - uses: ./.github/actions/build-environment
         with:
           board: ${{ matrix.board }}
@@ -56,26 +59,25 @@ jobs:
         run: |
           cd "$GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/${{ matrix.path }}"          
           ~/uf2/utils/uf2conv.py SoftRF.ino.hex -c -f 0xADA52840
-#          rm -v !("filename1"|"filename2")
+          mv flash.uf2 SoftRF.uf2
+          rm -v !("SoftRF.uf2")
+
+      - name: Rename
+        run: |
+          cd "$GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/"
+          rename 's/SoftRF/${{ matrix.artifact }}/' *
+          cd "$GITHUB_WORKSPACE"
 
       - name: List
         run: |
           find "$GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/"
           cd "$GITHUB_WORKSPACE"
 
-#      - uses: actions/upload-artifact@v3
-#        if: startsWith(matrix.board, 'esp32:esp32:')
-#        with:
-#          name: ${{ matrix.artifact }}
-#          path: "software/firmware/source/SoftRF/build/${{ matrix.path }}/"
-#          if-no-files-found: error
-
-#      - uses: actions/upload-artifact@v3
-#        if: startsWith(matrix.board, 'adafruit:nrf52:')
-#        with:
-#          name: ${{ matrix.artifact }}
-#          path: "software/firmware/source/SoftRF/build/${{ matrix.path }}/SoftRF.ino.zip"
-#          if-no-files-found: error
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.artifact }}
+          path: "software/firmware/source/SoftRF/build/${{ matrix.path }}/"
+          if-no-files-found: error
 
   release:
     if: startsWith(github.event.ref, 'refs/tags/v')

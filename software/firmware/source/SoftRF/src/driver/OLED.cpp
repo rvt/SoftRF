@@ -185,7 +185,7 @@ byte OLED_setup() {
 
       u8x8->draw2x2String( 2, 2 - shift_y, SoftRF_text1);
 
-      if (hw_info.model == SOFTRF_MODEL_DONGLE) {
+      if (shift_y) {
         u8x8->drawString   ( 6, 3, SoftRF_text2);
         u8x8->draw2x2String( 2, 4, SoftRF_text3);
       }

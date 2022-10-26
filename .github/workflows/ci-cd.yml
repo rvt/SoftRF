@@ -65,9 +65,8 @@ jobs:
 
       - name: Rename
         run: |
-          cd "$GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/"
+          cd "$GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/${{ matrix.path }}"
           rename -v 's/SoftRF/${{ matrix.artifact }}/' SoftRF*
-          cd "$GITHUB_WORKSPACE"
 
       - name: List
         run: |

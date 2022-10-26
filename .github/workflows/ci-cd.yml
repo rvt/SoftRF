@@ -49,21 +49,21 @@ jobs:
           find "$GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/"
 
       - name: Running uf2
-        if: startsWith(inputs.board, 'adafruit:nrf52:')
+        if: startsWith(matrix.board, 'adafruit:nrf52:')
         run: |
           cd "$GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/${{ matrix.path }}"          
           ~/uf2/utils/uf2conv.py SoftRF.ino.hex -c -f 0xADA52840
           cd "$GITHUB_WORKSPACE"
 
       - uses: actions/upload-artifact@v3
-        if: startsWith(inputs.board, 'adafruit:nrf52:')
+        if: startsWith(matrix.board, 'adafruit:nrf52:')
         with:
           name: ${{ matrix.artifact }}
           path: "software/firmware/source/SoftRF/build/${{ matrix.path }}/"
           if-no-files-found: error
 
       - uses: actions/upload-artifact@v3
-        if: startsWith(inputs.board, 'esp32:esp32:')
+        if: startsWith(matrix.board, 'esp32:esp32:')
         with:
           name: ${{ matrix.artifact }}
           path: "software/firmware/source/SoftRF/build/${{ matrix.path }}/SoftRF.ino.zip"

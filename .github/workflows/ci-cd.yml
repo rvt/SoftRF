@@ -86,6 +86,7 @@ jobs:
     with:
       prerelease: true
       environment: Prerelease
+    secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
 
   release:
@@ -95,4 +96,5 @@ jobs:
     with:
       prerelease: false
       environment: Release
+    secrets:
       token: ${{ secrets.GITHUB_TOKEN }}

@@ -13,10 +13,9 @@ on:
         description: "environment"
         required: true
         type: string
+    secrets:
       token:
-        description: "token"
         required: true
-        type: string
 
 jobs:
   release:

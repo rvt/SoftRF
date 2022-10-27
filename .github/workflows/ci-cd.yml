@@ -15,18 +15,18 @@ jobs:
     strategy:
       matrix:
         include:
-          - board: 'esp32:esp32:esp32:PartitionScheme=min_spiffs,CPUFreq=80,PSRAM=enabled,FlashFreq=80,FlashMode=dio,FlashSize=4M,DebugLevel=none'
-            artifact: 'SoftRF-esp32'
-            path: 'esp32.esp32.esp32'
+#          - board: 'esp32:esp32:esp32:PartitionScheme=min_spiffs,CPUFreq=80,PSRAM=enabled,FlashFreq=80,FlashMode=dio,FlashSize=4M,DebugLevel=none'
+#            artifact: 'SoftRF-esp32'
+#            path: 'esp32.esp32.esp32'
           - board: 'adafruit:nrf52:pca10056'
             artifact: 'SoftRF-nrf52'
             path: 'adafruit.nrf52.pca10056'
-          - board: 'esp32:esp32:esp32s2:PartitionScheme=min_spiffs,CPUFreq=80,PSRAM=enabled,FlashMode=dio,FlashSize=4M,DebugLevel=none'
-            artifact: 'SoftRF-esp32s'
-            path: 'esp32.esp32.esp32s2'
-          - board: 'esp32:esp32:esp32s3:PartitionScheme=min_spiffs,CPUFreq=80,PSRAM=enabled,FlashMode=dio,FlashSize=4M,DebugLevel=none'
-            artifact: 'SoftRF-esp32s3'
-            path: 'esp32.esp32.esp32s3'
+#          - board: 'esp32:esp32:esp32s2:PartitionScheme=min_spiffs,CPUFreq=80,PSRAM=enabled,FlashMode=dio,FlashSize=4M,DebugLevel=none'
+#            artifact: 'SoftRF-esp32s'
+#            path: 'esp32.esp32.esp32s2'
+#          - board: 'esp32:esp32:esp32s3:PartitionScheme=min_spiffs,CPUFreq=80,PSRAM=enabled,FlashMode=dio,FlashSize=4M,DebugLevel=none'
+#            artifact: 'SoftRF-esp32s3'
+#            path: 'esp32.esp32.esp32s3'
 
     env:
       ARDUINO_IDE_VERSION: 1.8.13
@@ -76,7 +76,7 @@ jobs:
           if-no-files-found: error
 
   release:
-    if: startsWith(github.event.ref, 'refs/tags/v')
+#    if: startsWith(github.event.ref, 'refs/tags/v')
     needs: build
     uses: rvt/SoftRF/.github/workflows/ci-release.yml@arduino-cli
     with:

@@ -14,6 +14,11 @@ on:
         required: true
         default: true
         type: string
+      token:
+        description: "environment"
+        required: true
+        default: true
+        type: string
 
 jobs:
   release:
@@ -40,10 +45,10 @@ jobs:
           tag_name: prerelease
           name: prerelease
           body_path: ${{ github.workspace }}/STRATUX.md
-          token: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
+          token: ${{ inputs.token }}
           files: |
             artifacts/*.zip
-            Release.txt
+            RELEASE.txt
             STRATUX.md
           draft: true
           prerelease: true
@@ -53,10 +58,10 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           body_path: ${{ github.workspace }}/STRATUX.md
-          token: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
+          token: ${{ inputs.token }}
           files: |
             artifacts/*.zip
-            Release.txt
+            RELEASE.txt
             STRATUX.md
           draft: false
           prerelease: false

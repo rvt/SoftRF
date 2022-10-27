@@ -71,7 +71,7 @@ jobs:
 
       - uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.artifact }}
+          name: ${{ matrix.artifact }}.zip
           path: "software/firmware/source/SoftRF/build/${{ matrix.path }}/"
           if-no-files-found: error
 
@@ -90,3 +90,4 @@ jobs:
     with:
       prerelease: false
       environment: Release
+      token: ${{ secrets.CUSTOM_GITHUB_TOKEN }}

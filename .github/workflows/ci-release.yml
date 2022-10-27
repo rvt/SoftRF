@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Set ${{ $GITHUB_WORKSPACE }}
+      - name: cd
         shell: bash
         run: |
           cd "$GITHUB_WORKSPACE"
@@ -36,7 +36,7 @@ jobs:
       - name: Build
         run: echo ${{ github.sha }} > $GITHUB_WORKSPACE/RELEASE.txt
 
-      - name: ls ${{ $GITHUB_WORKSPACE }}
+      - name: ls
         shell: bash
         run: |
           ls .

@@ -39,7 +39,7 @@ jobs:
       - name: ls
         shell: bash
         run: |
-          ls .
+          ls -ial
 
       - name: PreRelease
         if: ${{ startsWith(inputs.prerelease, true) }}
@@ -50,9 +50,9 @@ jobs:
           body_path: ${{ github.workspace }}/STRATUX.md
           token: ${{ secrets.token }}
           files: |
-            artifacts/*.zip
-            RELEASE.txt
-            STRATUX.md
+            $GITHUB_WORKSPACE/artifacts/*.zip
+            $GITHUB_WORKSPACE/RELEASE.txt
+            $GITHUB_WORKSPACE/STRATUX.md
           draft: true
           prerelease: true
 

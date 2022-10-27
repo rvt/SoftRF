@@ -78,7 +78,7 @@ jobs:
   prerelease:
     if: ${{ startsWith(github.event.ref, 'refs/heads/prerelease') }}
     needs: build
-    uses: rvt/SoftRF/.github/workflows/ci-release.yml@arduino-cli
+    uses: rvt/SoftRF/.github/workflows/ci-release.yml@prerelease
     with:
       prerelease: true
       environment: Prerelease
@@ -86,7 +86,7 @@ jobs:
   release:
     if: ${{ startsWith(github.event.ref, 'refs/tags/v') }}
     needs: build
-    uses: rvt/SoftRF/.github/workflows/ci-release.yml@arduino-cli
+    uses: rvt/SoftRF/.github/workflows/ci-release.yml@prerelease
     with:
       prerelease: false
       environment: Release

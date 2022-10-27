@@ -30,10 +30,10 @@ jobs:
 
       - uses: actions/download-artifact@v3
         with:
-          path: artifacts
+          path: $GITHUB_WORKSPACE/artifacts
 
       - name: Build
-        run: echo ${{ github.sha }} > RELEASE.txt
+        run: echo ${{ github.sha }} > $GITHUB_WORKSPACE/RELEASE.txt
 
       - name: PreRelease
         if: ${{ startsWith(inputs.prerelease, true) }}
@@ -57,8 +57,8 @@ jobs:
           body_path: ${{ github.workspace }}/STRATUX.md
           token: ${{ secrets.token }}
           files: |
-            artifacts/*.zip
-            RELEASE.txt
-            STRATUX.md
+            $GITHUB_WORKSPACE/artifacts/*.zip
+            $GITHUB_WORKSPACE/RELEASE.txt
+            $GITHUB_WORKSPACE/STRATUX.md
           draft: false
           prerelease: false

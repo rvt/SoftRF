@@ -24,10 +24,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Set $GITHUB_WORKSPACE
+      - name: Set ${{ $GITHUB_WORKSPACE }}
+        shell: bash
         run: |
           cd "$GITHUB_WORKSPACE"
-          ls .
 
       - uses: actions/download-artifact@v3
         with:
@@ -35,6 +35,11 @@ jobs:
 
       - name: Build
         run: echo ${{ github.sha }} > $GITHUB_WORKSPACE/RELEASE.txt
+
+      - name: ls ${{ $GITHUB_WORKSPACE }}
+        shell: bash
+        run: |
+          ls .
 
       - name: PreRelease
         if: ${{ startsWith(inputs.prerelease, true) }}

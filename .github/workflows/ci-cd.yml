@@ -96,5 +96,6 @@ jobs:
     with:
       prerelease: false
       environment: Release
+      workspace: ${{ github.workspace }}
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}

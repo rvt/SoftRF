@@ -42,7 +42,7 @@ jobs:
           tag_name: prerelease
           name: prerelease
           body_path: ${{ github.workspace }}/STRATUX.md
-          token: ${{ inputs.token }}
+          token: ${{ secrets.token }}
           files: |
             artifacts/*.zip
             RELEASE.txt
@@ -55,7 +55,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           body_path: ${{ github.workspace }}/STRATUX.md
-          token: ${{ inputs.token }}
+          token: ${{ secrets.token }}
           files: |
             artifacts/*.zip
             RELEASE.txt

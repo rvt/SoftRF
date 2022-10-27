@@ -4,16 +4,11 @@ name: Publish to Azure
 on:
   workflow_call:
     inputs:
-      envName:
-        description: "Would you like to release?"
+      prerelease:
+        description: "prerelease"
         required: true
-        default: false
+        default: true
         type: boolean
-      myName:
-        description: "My Name test"
-        required: true
-        default: "Some other name"
-        type: string
 
 jobs:
   release:
@@ -42,11 +37,12 @@ jobs:
           draft: true
           prerelease: true
 
-      - name: Upload binaries to release
-        uses: svenstaro/upload-release-action@v2
+      - name: Release
+        uses: softprops/action-gh-release@v1
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: artifacts/*
-          tag: ${{ github.ref }}
-          overwrite: true
-          file_glob: true
+          name: SoftRF Stratux releases
+          body_path: ${{ github.workspace }}/STRATUX.md
+          token: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
+          files: artifacts/*.zip
+          prerelease: true
+

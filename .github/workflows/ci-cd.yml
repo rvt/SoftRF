@@ -75,11 +75,17 @@ jobs:
           path: "software/firmware/source/SoftRF/build/${{ matrix.path }}/"
           if-no-files-found: error
 
-  release:
-#    if: startsWith(github.event.ref, 'refs/tags/v')
+  prerelease:
+    if: ${{ !startsWith(github.event.ref, 'refs/tags/v') }}
     needs: build
     uses: rvt/SoftRF/.github/workflows/ci-release.yml@arduino-cli
     with:
-      myName: "monaWeb 4"
-      envName: true
+      prerelease: true
+
+  release:
+    if: ${{ startsWith(github.event.ref, 'refs/tags/v') }}
+    needs: build
+    uses: rvt/SoftRF/.github/workflows/ci-release.yml@arduino-cli
+    with:
+      prerelease: false
 

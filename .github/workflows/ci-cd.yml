@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - master
-      - arduino-cli
+      - prerelease
 
   workflow_dispatch:
 
@@ -76,12 +76,11 @@ jobs:
           if-no-files-found: error
 
   prerelease:
-    if: ${{ !startsWith(github.event.ref, 'refs/tags/v') }}
+    if: ${{ startsWith(github.event.ref, 'refs/heads/prerelease') }}
     needs: build
     uses: rvt/SoftRF/.github/workflows/ci-release.yml@arduino-cli
     with:
       prerelease: true
-      draft: true
       environment: Prerelease
 
   release:
@@ -90,5 +89,4 @@ jobs:
     uses: rvt/SoftRF/.github/workflows/ci-release.yml@arduino-cli
     with:
       prerelease: false
-      draft: false
       environment: Release

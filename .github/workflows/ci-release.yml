@@ -9,11 +9,6 @@ on:
         required: true
         default: true
         type: boolean
-      draft:
-        description: "draft"
-        required: true
-        default: true
-        type: boolean
       environment:
         description: "environment"
         required: true
@@ -38,15 +33,30 @@ jobs:
       - name: Build
         run: echo ${{ github.sha }} > RELEASE.txt
 
-      - name: Release
+      - name: PreRelease
+        if: ${{ startsWith(inputs.prerelease, true) }}
         uses: softprops/action-gh-release@v1
         with:
-          name: SoftRF Stratux releases
+          tag_name: prerelease
+          name: prerelease
           body_path: ${{ github.workspace }}/STRATUX.md
           token: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
           files: |
             artifacts/*.zip
             Release.txt
             STRATUX.md
-          draft: ${{ inputs.draft }}
-          prerelease: ${{ inputs.prerelease }}
+          draft: true
+          prerelease: true
+
+      - name: Release
+        if: ${{ startsWith(inputs.prerelease, false) }}
+        uses: softprops/action-gh-release@v1
+        with:
+          body_path: ${{ github.workspace }}/STRATUX.md
+          token: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
+          files: |
+            artifacts/*.zip
+            Release.txt
+            STRATUX.md
+          draft: false
+          prerelease: false

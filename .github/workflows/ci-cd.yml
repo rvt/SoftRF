@@ -86,6 +86,7 @@ jobs:
     with:
       prerelease: true
       environment: Prerelease
+      workspace: ${{ github.workspace }}
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
 

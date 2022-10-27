@@ -22,13 +22,17 @@ For the T-Beam you need to select the `ESP32 Dev Module` board, for the T-Echo t
   - enable GSA, GSV, VTG
   - enable GPS, GLONASS and BEIDOU
 - default connection with Stratux: **USB**
-- optional connection with Stratux: **Bluetooth LE** (works only with rvt's Stratux fork: https://github.com/rvt/stratux/tree/bluetooth-le-devices, requires T-Echo settings change using NFC)
+- optional connection with Stratux: **Bluetooth LE** (works only with rvt's Stratux fork: https://github.com/rvt/stratux/tree/bluetooth-le-devices, requires T-Echo settings change using NFC or using serial console commands)
 - LK8EX1 and LEGACY traffic messages over serial connection disabled (to relax data rate, Stratux receives LEGACY directly anyhow)
 
-**LIMITATIONS**:
+**LIMITATIONS:**
 - GPS update rate is limited to 1 Hz in SoftRF, which is good enough for Stratux except when using GPS as a pseudo AHRS
 - the L76K only supports the NMEA "strict" protocol version, therefore some extended satellite information (like elevation, azimut and numbering) is not provided for some satellites and therefore the GPS info page in Stratux is incomplete, e.g. BEIDOU satellites are missing but are in fact used and counted for "in solution"
 - currently only the T-Echo as a Baro source for Stratux is supported
+
+**Recommendations (be careful as you may render your device unusable):**
+- load OGN database for T-Beam: https://github.com/lyusupov/SoftRF/wiki/Badge-Edition.-Aircrafts-database
+- modify SoftRF settings through serial console commands: http://soaringweather.no-ip.info/SoftRF/settings.html
 
 ## Features
 

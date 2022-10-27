@@ -90,4 +90,4 @@ jobs:
     with:
       prerelease: false
       environment: Release
-      token: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
+      token: ${{ secrets.GITHUB_TOKEN }}

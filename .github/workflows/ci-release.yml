@@ -9,11 +9,15 @@ on:
         required: true
         default: true
         type: boolean
+      environment:
+        description: "environment"
+        required: true
+        default: true
+        type: String
 
 jobs:
   release:
-    environment: Release
-    name: Deploy to ${{ inputs.myName }}
+    environment: ${{ inputs.environment }}
 
     runs-on: ubuntu-latest
 
@@ -35,7 +39,7 @@ jobs:
           tag_name: ${{ github.ref }}
           release_name: Release ${{ github.ref }}
           draft: true
-          prerelease: true
+          prerelease: ${{ inputs.prerelease }}
 
       - name: Release
         uses: softprops/action-gh-release@v1
@@ -44,4 +48,4 @@ jobs:
           body_path: ${{ github.workspace }}/STRATUX.md
           token: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
           files: artifacts/*.zip
-          prerelease: true
+          prerelease: ${{ inputs.prerelease }}

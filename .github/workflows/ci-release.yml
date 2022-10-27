@@ -27,6 +27,7 @@ jobs:
       - name: Set $GITHUB_WORKSPACE
         run: |
           cd "$GITHUB_WORKSPACE"
+          ls .
 
       - uses: actions/download-artifact@v3
         with:

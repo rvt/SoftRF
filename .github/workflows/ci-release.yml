@@ -9,6 +9,11 @@ on:
         required: true
         default: true
         type: boolean
+      draft:
+        description: "draft"
+        required: true
+        default: true
+        type: boolean
       environment:
         description: "environment"
         required: true
@@ -30,16 +35,8 @@ jobs:
         with:
           path: artifacts
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: true
-          prerelease: ${{ inputs.prerelease }}
+      - name: Build
+        run: echo ${{ github.sha }} > RELEASE.txt
 
       - name: Release
         uses: softprops/action-gh-release@v1
@@ -47,5 +44,9 @@ jobs:
           name: SoftRF Stratux releases
           body_path: ${{ github.workspace }}/STRATUX.md
           token: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
-          files: artifacts/*.zip
+          files: |
+            artifacts/*.zip
+            Release.txt
+            STRATUX.md
+          draft: ${{ inputs.draft }}
           prerelease: ${{ inputs.prerelease }}

@@ -81,6 +81,7 @@ jobs:
     uses: rvt/SoftRF/.github/workflows/ci-release.yml@arduino-cli
     with:
       prerelease: true
+      draft: true
       environment: Prerelease
 
   release:
@@ -89,4 +90,5 @@ jobs:
     uses: rvt/SoftRF/.github/workflows/ci-release.yml@arduino-cli
     with:
       prerelease: false
+      draft: false
       environment: Release

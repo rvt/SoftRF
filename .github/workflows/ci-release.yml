@@ -12,12 +12,10 @@ on:
       environment:
         description: "environment"
         required: true
-        default: true
         type: string
       token:
-        description: "environment"
+        description: "token"
         required: true
-        default: true
         type: string
 
 jobs:

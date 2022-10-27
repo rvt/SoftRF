@@ -31,14 +31,14 @@ jobs:
       - name: cd
         shell: bash
         run: |
-          cd "${{ inputs.workspace }}"
+          cd "${{ github.workspace }}"
 
       - uses: actions/download-artifact@v3
         with:
-          path: ${{ inputs.workspace }}/artifacts
+          path: ${{ github.workspace }}/artifacts
 
       - name: Build
-        run: echo ${{ github.sha }} > ${{ inputs.workspace }}/RELEASE.txt
+        run: echo ${{ github.sha }} > ${{ github.workspace }}/RELEASE.txt
 
       - name: ls
         shell: bash
@@ -54,9 +54,9 @@ jobs:
           body_path: ${{ github.workspace }}/STRATUX.md
           token: ${{ secrets.token }}
           files: |
-            ${{ inputs.workspace }}/artifacts/*.zip
-            ${{ inputs.workspace }}/RELEASE.txt
-            ${{ inputs.workspace }}/STRATUX.md
+            ${{ github.workspace }}/artifacts/*.zip
+            ${{ github.workspace }}/RELEASE.txt
+            ${{ github.workspace }}/STRATUX.md
           draft: true
           prerelease: true
 
@@ -67,8 +67,8 @@ jobs:
           body_path: ${{ github.workspace }}/STRATUX.md
           token: ${{ secrets.token }}
           files: |
-            ${{ inputs.workspace }}/artifacts/*.zip
-            ${{ inputs.workspace }}/RELEASE.txt
-            ${{ inputs.workspace }}/STRATUX.md
+            ${{ github.workspace }}/artifacts/*.zip
+            ${{ github.workspace }}/RELEASE.txt
+            ${{ github.workspace }}/STRATUX.md
           draft: false
           prerelease: false

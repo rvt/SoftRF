@@ -112,7 +112,7 @@ jobs:
 
   release:
     if: ${{ startsWith(github.event.ref, 'refs/tags/v') }}
-    needs: build
+    needs: artifacts
     uses: rvt/SoftRF/.github/workflows/ci-release.yml@prerelease
     with:
       prerelease: false

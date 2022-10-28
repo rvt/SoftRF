@@ -43,40 +43,46 @@ jobs:
 
       - uses: actions/checkout@v3
 
-      - uses: ./.github/actions/build-environment
-        with:
-          board: ${{ matrix.board }}
-
-      - name: Build SoftRF for platform ${{ matrix.board }}
-        run: |
-          echo 'Building board ${{ matrix.board }}'
-          # Get version and compile
-          arduino-cli version
-          arduino-cli compile -e -b "${{ matrix.board }}" $GITHUB_WORKSPACE/software/firmware/source/SoftRF
-
-      - name: List generated files
-        run: |
-          find "$GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/"
-
-      - name: Running uf2
-        if: startsWith(matrix.board, 'adafruit:nrf52:')
-        run: |
-          cd "$GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/${{ matrix.path }}"          
-          ~/uf2/utils/uf2conv.py SoftRF.ino.hex -c -f 0xADA52840
-          mv flash.uf2 SoftRF.uf2
-          # Remove files that we do not need for uf2 targets
-          shopt -s extglob
-          rm -v !("SoftRF.uf2")
-
-      - name: Rename before artifact upload
-        run: |
-          cd "$GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/${{ matrix.path }}"
-          rename -v 's/SoftRF/${{ matrix.artifact }}/' SoftRF*
+#      - uses: ./.github/actions/build-environment
+#        with:
+#          board: ${{ matrix.board }}
+#
+#      - name: Build SoftRF for platform ${{ matrix.board }}
+#        run: |
+#          echo 'Building board ${{ matrix.board }}'
+#          # Get version and compile
+#          arduino-cli version
+#          arduino-cli compile -e -b "${{ matrix.board }}" $GITHUB_WORKSPACE/software/firmware/source/SoftRF
+#
+#      - name: List generated files
+#        run: |
+#          find "$GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/"
+#
+#      - name: Running uf2
+#        if: startsWith(matrix.board, 'adafruit:nrf52:')
+#        run: |
+#          cd "$GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/${{ matrix.path }}"
+#          ~/uf2/utils/uf2conv.py SoftRF.ino.hex -c -f 0xADA52840
+#          mv flash.uf2 SoftRF.uf2
+#          # Remove files that we do not need for uf2 targets
+#          shopt -s extglob
+#          rm -v !("SoftRF.uf2")
+#
+#      - name: Rename before artifact upload
+#        run: |
+#          cd "$GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/${{ matrix.path }}"
+#          rename -v 's/SoftRF/${{ matrix.artifact }}/' SoftRF*
+#
+#      - uses: actions/upload-artifact@v3
+#        with:
+#          name: ${{ matrix.artifact }}.zip
+#          path: "software/firmware/source/SoftRF/build/${{ matrix.path }}/"
+#          if-no-files-found: error
 
       - uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.artifact }}.zip
-          path: "software/firmware/source/SoftRF/build/${{ matrix.path }}/"
+          path: "./"
           if-no-files-found: error
 
   prerelease:

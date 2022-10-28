@@ -30,10 +30,6 @@ jobs:
         run: |
           echo ${{ github.sha }} > RELEASE.txt
           find .
-          ls -ial
-          cat text.zip
-          unzip text.zip
-          ls .
 
       - name: PreRelease
         if: ${{ startsWith(inputs.prerelease, true) }}
@@ -44,9 +40,9 @@ jobs:
           body_path: STRATUX.md
           token: ${{ secrets.token }}
           files: |
-            *.zip
+            SoftRF/*.zip
             RELEASE.txt
-            STRATUX.md
+            additional/STRATUX.md
           draft: true
           prerelease: true
 

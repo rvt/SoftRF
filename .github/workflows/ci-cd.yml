@@ -75,19 +75,19 @@ jobs:
 #
 #      - uses: actions/upload-artifact@v3
 #        with:
-#          name: ${{ matrix.artifact }}.zip
+#          name: SoftRF
 #          path: |
 #            "${{ github.workspace }}/software/firmware/source/SoftRF/build/${{ matrix.path }}/"
 #          if-no-files-found: error
 
       - uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.artifact }}.zip
+          name: SoftRF
           path: | 
             SoftRF-nrf52.zip
           if-no-files-found: error
 
-  artifacts:
+  additional:
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -95,7 +95,7 @@ jobs:
 
       - uses: actions/upload-artifact@v3
         with:
-          name: text.zip
+          name: additional
           path: |
             STRATUX.md
           if-no-files-found: error

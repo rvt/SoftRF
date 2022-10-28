@@ -81,8 +81,8 @@ jobs:
 
       - uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.artifact }}.zip
-          path: "./"
+          name: SoftRF-nrf52
+          path: SoftRF-nrf52.zip
           if-no-files-found: error
 
   prerelease:

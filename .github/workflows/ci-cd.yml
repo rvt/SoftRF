@@ -76,7 +76,7 @@ jobs:
 #      - uses: actions/upload-artifact@v3
 #        with:
 #          name: ${{ matrix.artifact }}.zip
-#          path: "software/firmware/source/SoftRF/build/${{ matrix.path }}/"
+#          path: "${{ github.workspace }}/software/firmware/source/SoftRF/build/${{ matrix.path }}/"
 #          if-no-files-found: error
 
       - uses: actions/upload-artifact@v3

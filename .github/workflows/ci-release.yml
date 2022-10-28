@@ -49,8 +49,8 @@ jobs:
         if: ${{ startsWith(inputs.prerelease, true) }}
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: prerelease
-          name: prerelease
+#          tag_name: prerelease
+#          name: prerelease
           body_path: additional/STRATUX.md
           token: ${{ secrets.token }}
           files: |

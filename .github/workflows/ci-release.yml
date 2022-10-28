@@ -26,6 +26,18 @@ jobs:
     steps:
       - uses: actions/download-artifact@v3
 
+      - name: Create tag
+        if: ${{ startsWith(inputs.prerelease, true) }}
+        uses: actions/github-script@v5
+        with:
+          script: |
+            github.rest.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: 'refs/tags/prerelease',
+              sha: context.sha
+            })
+
       - name: Generate Release SHA
         run: |
           echo ${{ github.sha }} > RELEASE.txt

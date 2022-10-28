@@ -36,8 +36,9 @@ jobs:
       - name: Generate Release SHA
         run: |
           pwd
-          ls .
           echo ${{ github.sha }} > RELEASE.txt
+          ls .
+          ls ${{ github.workspace }}/text.zip
           unzip -o ${{ github.workspace }}/text.zip
           ls .
 

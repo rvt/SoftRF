@@ -38,8 +38,8 @@ jobs:
           pwd
           echo ${{ github.sha }} > RELEASE.txt
           ls .
-          ls ${{ github.workspace }}/text.zip
-          unzip -o ${{ github.workspace }}/text.zip
+#          ls ${{ github.workspace }}/text.zip
+#          unzip -o ${{ github.workspace }}/text.zip
           ls .
 
       - name: PreRelease

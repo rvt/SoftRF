@@ -28,7 +28,6 @@ jobs:
 
     steps:
       - name: cd
-        shell: bash
         run: |
           cd "${{ github.workspace }}"
 
@@ -36,6 +35,10 @@ jobs:
 
       - name: Build
         run: echo ${{ github.sha }} > RELEASE.txt
+
+      - name: cd
+        run: |
+          ls .
 
       - name: PreRelease
         if: ${{ startsWith(inputs.prerelease, true) }}

@@ -27,38 +27,20 @@ jobs:
     steps:
       - uses: actions/download-artifact@v3
 
-#      - name: Create tag
-#        if: ${{ startsWith(inputs.prerelease, true) }}
-#        uses: actions/github-script@v5
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.token }}
-#        with:
-#          script: |
-#            github.rest.git.createRef({
-#              owner: context.repo.owner,
-#              repo: context.repo.repo,
-#              ref: 'refs/tags/prerelease',
-#              sha: context.sha
-#            })
-
       - name: Generate Release SHA
         run: |
           echo ${{ github.sha }} > RELEASE.txt
-          find .
 
       - name: PreRelease
         if: ${{ startsWith(inputs.prerelease, true) }}
         uses: softprops/action-gh-release@v1
         with:
-#          tag_name: prerelease
-#          name: prerelease
           body_path: additional/STRATUX.md
           token: ${{ secrets.token }}
           files: |
             SoftRF/*.zip
             RELEASE.txt
-            additional/STRATUX.md
-          draft: true
+          draft: false
           prerelease: true
 
       - name: Release
@@ -70,6 +52,5 @@ jobs:
           files: |
             SoftRF/*.zip
             RELEASE.txt
-            additional/STRATUX.md
           draft: false
           prerelease: false

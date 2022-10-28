@@ -19,6 +19,9 @@ on:
 
 jobs:
   release:
+    permissions:
+      actions: write
+
     environment: ${{ inputs.environment }}
 
     runs-on: ubuntu-latest

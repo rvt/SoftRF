@@ -76,23 +76,32 @@ jobs:
 #      - uses: actions/upload-artifact@v3
 #        with:
 #          name: ${{ matrix.artifact }}.zip
-#          path: "${{ github.workspace }}/software/firmware/source/SoftRF/build/${{ matrix.path }}/"
+#          path: |
+#            "${{ github.workspace }}/software/firmware/source/SoftRF/build/${{ matrix.path }}/"
 #          if-no-files-found: error
 
       - uses: actions/upload-artifact@v3
         with:
-          path: SoftRF-nrf52.zip
+          name: ${{ matrix.artifact }}.zip
+          path: | 
+            SoftRF-nrf52.zip
           if-no-files-found: error
+
+  artifacts:
+    needs: build
+    steps:
+      - uses: actions/checkout@v3
 
       - uses: actions/upload-artifact@v3
         with:
-          path: | 
+          name: text.zip
+          path: |
             STRATUX.md
           if-no-files-found: error
 
   prerelease:
     if: ${{ startsWith(github.event.ref, 'refs/heads/prerelease') }}
-    needs: build
+    needs: artifacts
     uses: rvt/SoftRF/.github/workflows/ci-release.yml@prerelease
     with:
       prerelease: true

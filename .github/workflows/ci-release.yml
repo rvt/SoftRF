@@ -13,10 +13,6 @@ on:
         description: "environment"
         required: true
         type: string
-      workspace:
-        description: "workspace"
-        required: true
-        type: string
     secrets:
       token:
         required: true
@@ -31,14 +27,16 @@ jobs:
       - name: cd
         shell: bash
         run: |
-          cd "${{ inputs.workspace }}"
+          cd "${{ github.workspace }}"
 
-      - uses: actions/download-artifact@v3
-        with:
-          path: ${{ inputs.workspace }}/artifacts
+      - uses: actions/checkout@v3
+
+#      - uses: actions/download-artifact@v3
+#        with:
+#          path: artifacts
 
       - name: Build
-        run: echo ${{ github.sha }} > ${{ inputs.workspace }}/RELEASE.txt
+        run: echo ${{ github.sha }} > RELEASE.txt
 
       - name: ls
         shell: bash
@@ -51,12 +49,12 @@ jobs:
         with:
           tag_name: prerelease
           name: prerelease
-          body_path: ${{ github.workspace }}/STRATUX.md
+          body_path: STRATUX.md
           token: ${{ secrets.token }}
           files: |
-            ${{ inputs.workspace }}/artifacts/*.zip
-            ${{ inputs.workspace }}/RELEASE.txt
-            ${{ inputs.workspace }}/STRATUX.md
+            artifacts/*.zip
+            RELEASE.txt
+            STRATUX.md
           draft: true
           prerelease: true
 
@@ -64,11 +62,11 @@ jobs:
         if: ${{ startsWith(inputs.prerelease, false) }}
         uses: softprops/action-gh-release@v1
         with:
-          body_path: ${{ github.workspace }}/STRATUX.md
+          body_path: STRATUX.md
           token: ${{ secrets.token }}
           files: |
-            ${{ inputs.workspace }}/artifacts/*.zip
-            ${{ inputs.workspace }}/RELEASE.txt
-            ${{ inputs.workspace }}/STRATUX.md
+            artifacts/*.zip
+            RELEASE.txt
+            STRATUX.md
           draft: false
           prerelease: false

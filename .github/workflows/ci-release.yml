@@ -37,7 +37,7 @@ jobs:
         with:
           tag_name: prerelease
           name: prerelease
-          body_path: STRATUX.md
+          body_path: additional/STRATUX.md
           token: ${{ secrets.token }}
           files: |
             SoftRF/*.zip
@@ -50,11 +50,11 @@ jobs:
         if: ${{ startsWith(inputs.prerelease, false) }}
         uses: softprops/action-gh-release@v1
         with:
-          body_path: STRATUX.md
+          body_path: additional/STRATUX.md
           token: ${{ secrets.token }}
           files: |
-            artifacts/*.zip
+            SoftRF/*.zip
             RELEASE.txt
-            STRATUX.md
+            additional/STRATUX.md
           draft: false
           prerelease: false

@@ -29,6 +29,8 @@ jobs:
       - name: Create tag
         if: ${{ startsWith(inputs.prerelease, true) }}
         uses: actions/github-script@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.token }}
         with:
           script: |
             github.rest.git.createRef({

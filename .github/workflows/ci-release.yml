@@ -31,13 +31,11 @@ jobs:
         run: |
           cd "${{ github.workspace }}"
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/checkout@v3
 
-      - name: Build
-        run: echo ${{ github.sha }} > RELEASE.txt
-
-      - name: cd
+      - name: Generate Release SHA
         run: |
+          echo ${{ github.sha }} > RELEASE.txt
           ls .
 
       - name: PreRelease

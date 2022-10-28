@@ -81,8 +81,13 @@ jobs:
 
       - uses: actions/upload-artifact@v3
         with:
-          name: SoftRF-nrf52
           path: SoftRF-nrf52.zip
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v3
+        with:
+          path: | 
+            STRATUX.md
           if-no-files-found: error
 
   prerelease:

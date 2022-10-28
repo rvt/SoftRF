@@ -32,19 +32,10 @@ jobs:
         run: |
           cd "${{ github.workspace }}"
 
-      - uses: actions/checkout@v3
-
       - uses: actions/download-artifact@v3
-        with:
-          path: ${{ inputs.workspace }}/artifacts
 
       - name: Build
         run: echo ${{ github.sha }} > RELEASE.txt
-
-      - name: ls
-        shell: bash
-        run: |
-          ls -ial
 
       - name: PreRelease
         if: ${{ startsWith(inputs.prerelease, true) }}
@@ -55,7 +46,7 @@ jobs:
           body_path: STRATUX.md
           token: ${{ secrets.token }}
           files: |
-            artifacts/*.zip
+            *.zip
             RELEASE.txt
             STRATUX.md
           draft: true

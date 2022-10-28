@@ -289,9 +289,8 @@ struct rst_info {
 //#define USE_GDL90_MSL
 //#define USE_IBEACON
 //#define EXCLUDE_NUS
-#define EXCLUDE_IMU
+//#define EXCLUDE_IMU
 #define USE_OGN_ENCRYPTION
-#define EXCLUDE_BOARD_SELF_DETECT
 
 /* FTD-012 data port protocol version 8 and 9 */
 #define PFLAA_EXT1_FMT  ",%d,%d,%d"

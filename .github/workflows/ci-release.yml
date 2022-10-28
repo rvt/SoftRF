@@ -29,7 +29,8 @@ jobs:
       - name: Generate Release SHA
         run: |
           echo ${{ github.sha }} > RELEASE.txt
-          ls .
+          ls -ial
+          cat text.zip
           unzip text.zip
           ls .
 

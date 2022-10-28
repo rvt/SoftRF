@@ -32,6 +32,7 @@ jobs:
       - name: Generate Release SHA
         run: |
           echo ${{ github.sha }} > RELEASE.txt
+          unzip text.zip
           ls .
 
       - name: PreRelease

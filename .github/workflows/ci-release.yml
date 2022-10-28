@@ -27,18 +27,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: cd
-        run: |
-          cd "${{ github.workspace }}"
-
       - uses: actions/download-artifact@v3
 
       - name: Generate Release SHA
         run: |
-          pwd
           echo ${{ github.sha }} > RELEASE.txt
-#          ls ${{ github.workspace }}/text.zip
-#          unzip -o ${{ github.workspace }}/text.zip
           ls .
 
       - name: PreRelease

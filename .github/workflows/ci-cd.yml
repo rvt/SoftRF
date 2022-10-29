@@ -7,7 +7,7 @@ on:
       - '.*-rc.*'
     branches:
       - master
-      - prerelease
+      - prerelease2
 
   workflow_dispatch:
 

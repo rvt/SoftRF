@@ -50,8 +50,7 @@ jobs:
       - name: Build SoftRF for platform ${{ matrix.board }}
         run: |
           echo 'Building board ${{ matrix.board }}'
-          # Get version and compile
-          arduino-cli version
+          cd $GITHUB_WORKSPACE
           arduino-cli compile -e -b "${{ matrix.board }}" $GITHUB_WORKSPACE/software/firmware/source/SoftRF
 
       - name: List generated files

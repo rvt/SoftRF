@@ -161,6 +161,8 @@ typedef struct hardware_info {
     byte  storage;
     byte  rtc;
     byte  imu;
+    byte  mag;
+    byte  pmu;
 } hardware_info_t;
 
 typedef struct IODev_ops_struct {
@@ -215,6 +217,8 @@ enum
 	SOFTRF_MODEL_ACADEMY,
 	SOFTRF_MODEL_LEGO,
 	SOFTRF_MODEL_WEBTOP_USB,
+	SOFTRF_MODEL_PRIME_MK3,
+	SOFTRF_MODEL_BALKAN,
 };
 
 enum
@@ -233,33 +237,31 @@ enum
 enum
 {
 	STORAGE_NONE,
-	STORAGE_SD,
 	STORAGE_FLASH,
+	STORAGE_CARD,
+	STORAGE_FLASH_AND_CARD,
 };
 
 enum
 {
 	IMU_NONE,
+	ACC_BMA423,
+	ACC_ADXL362,
+	IMU_MPU6886,
+	IMU_MPU9250,
 	IMU_BNO080,
 	IMU_ICM20948,
-	IMU_MPU9250,
+	IMU_QMI8658,
 };
 
-static inline uint32_t DevID_Mapper(uint32_t id)
+enum
 {
-  /* remap address to avoid overlapping with congested FLARM range */
-  if (((id & 0x00FFFFFF) >= 0xDD0000) && ((id & 0x00FFFFFF) <= 0xDFFFFF)) {
-    id += 0x100000;
-  /*
-   * OGN 0.2.8+ does not decode 'Air V6' traffic when leading byte of 24-bit Id is 0x5B
-   * Remap 11xxxx addresses to avoid overlapping with congested Skytraxx range
-   */
-  } else if ((id & 0x00FF0000) == 0x5B0000 || (id & 0x00FF0000) == 0x110000) {
-    id += 0x010000;
-  }
-
-  return id;
-}
+	MAG_NONE,
+	MAG_AK8963,
+	MAG_AK09916,
+	MAG_IIS2MDC,
+	MAG_QMC6310,
+};
 
 extern ufo_t ThisAircraft;
 extern hardware_info_t hw_info;

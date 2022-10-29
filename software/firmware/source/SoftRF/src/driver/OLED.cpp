@@ -58,7 +58,7 @@ enum
 
 U8X8_OLED_I2C_BUS_TYPE u8x8_i2c(U8X8_PIN_NONE);
 
-U8X8_OLED_I2C_BUS_TYPE *u8x8 = NULL;
+U8X8 *u8x8 = NULL;
 
 static bool OLED_display_titles = false;
 static uint32_t prev_tx_packets_counter = (uint32_t) -1;
@@ -179,12 +179,13 @@ byte OLED_setup() {
 #endif /* EXCLUDE_OLED_049 */
     case DISPLAY_OLED_TTGO:
     case DISPLAY_OLED_HELTEC:
+    case DISPLAY_OLED_1_3:
     default:
       uint8_t shift_y = (hw_info.model == SOFTRF_MODEL_DONGLE ? 1 : 0);
 
       u8x8->draw2x2String( 2, 2 - shift_y, SoftRF_text1);
 
-      if (hw_info.model == SOFTRF_MODEL_DONGLE) {
+      if (shift_y) {
         u8x8->drawString   ( 6, 3, SoftRF_text2);
         u8x8->draw2x2String( 2, 4, SoftRF_text3);
       }
@@ -705,6 +706,7 @@ void OLED_fini(int reason)
 #endif /* EXCLUDE_OLED_049 */
     case DISPLAY_OLED_TTGO:
     case DISPLAY_OLED_HELTEC:
+    case DISPLAY_OLED_1_3:
     default:
       u8x8->draw2x2String(1, 3, reason == SOFTRF_SHUTDOWN_LOWBAT ?
                                 "LOW BAT" : "  OFF  ");
@@ -754,16 +756,90 @@ void OLED_info1()
 #endif /* EXCLUDE_OLED_049 */
     case DISPLAY_OLED_TTGO:
     case DISPLAY_OLED_HELTEC:
+    case DISPLAY_OLED_1_3:
     default:
 
-      u8x8->draw2x2String(0, 0, "RADIO");
+      u8x8->draw2x2String( 0, 0, "RADIO");
       u8x8->draw2x2String(14, 0, hw_info.rf   != RF_IC_NONE       ? "+" : "-");
-      u8x8->draw2x2String(0, 2, "GNSS");
+      u8x8->draw2x2String( 0, 2, "GNSS");
       u8x8->draw2x2String(14, 2, hw_info.gnss != GNSS_MODULE_NONE ? "+" : "-");
-      u8x8->draw2x2String(0, 4, "OLED");
+      u8x8->draw2x2String( 0, 4, "OLED");
       u8x8->draw2x2String(14, 4, hw_info.display != DISPLAY_NONE  ? "+" : "-");
-      u8x8->draw2x2String(0, 6, "BARO");
+      u8x8->draw2x2String( 0, 6, "BARO");
       u8x8->draw2x2String(14, 6, hw_info.baro != BARO_MODULE_NONE ? "+" : "-");
+
+      break;
+    }
+
+    delay(3000);
+  }
+}
+
+void OLED_info2()
+{
+  if (u8x8) {
+
+    u8x8->clear();
+
+    switch (hw_info.display)
+    {
+    case DISPLAY_OLED_TTGO:
+    case DISPLAY_OLED_HELTEC:
+    case DISPLAY_OLED_1_3:
+    default:
+
+      u8x8->draw2x2String( 0, 0, "RTC");
+      u8x8->draw2x2String(14, 0, hw_info.rtc != RTC_NONE ? "+" : "-");
+      u8x8->draw2x2String( 0, 2, "IMU");
+      u8x8->draw2x2String(14, 2, hw_info.imu != IMU_NONE ? "+" : "-");
+      u8x8->draw2x2String( 0, 4, "MAG");
+      u8x8->draw2x2String(14, 4, hw_info.mag != MAG_NONE ? "+" : "-");
+      u8x8->draw2x2String( 0, 6, "CARD");
+      u8x8->draw2x2String(14, 6, hw_info.storage == STORAGE_CARD ||
+                                 hw_info.storage == STORAGE_FLASH_AND_CARD ?
+                                                           "+" : "-");
+      break;
+    }
+
+    delay(3000);
+  }
+}
+
+void OLED_info3(int acfts, char *reg, char *mam, char *cn)
+{
+  if (u8x8) {
+
+    u8x8->clear();
+
+    switch (hw_info.display)
+    {
+    case DISPLAY_OLED_TTGO:
+    case DISPLAY_OLED_HELTEC:
+    case DISPLAY_OLED_1_3:
+    default:
+
+      if (acfts == -1) {
+        u8x8->draw2x2String( 6, 1, "NO");
+        u8x8->draw2x2String( 0, 3, "AIRCRAFT");
+        u8x8->draw2x2String( 4, 5, "DATA");
+      } else {
+        char str1[9], str2[9], str3[9], str4[9];
+
+        memset(str1, 0, sizeof(str1));
+        memset(str2, 0, sizeof(str2));
+        memset(str3, 0, sizeof(str3));
+        memset(str4, 0, sizeof(str4));
+
+        snprintf(str1, 6, "%d", acfts);
+        strncpy (str2, reg, 8);
+        strncpy (str3, mam, 8);
+        strncpy (str4,  cn, 8);
+
+        u8x8->draw2x2String( 4, 0, str1);
+        u8x8->draw2x2String( 0, 2, str2);
+        u8x8->draw2x2String( 0, 4, str3);
+        u8x8->draw2x2String( 0, 6, str4);
+      }
 
       break;
     }

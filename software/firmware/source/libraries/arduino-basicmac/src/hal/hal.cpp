@@ -104,7 +104,28 @@ void hal_pin_rxtx (s1_t val) {
         digitalWrite(lmic_pins.rxe, val == 0 ? HIGH : LOW);
 }
 
-#if !defined(ARDUINO_ARCH_ASR6601)
+#if defined(ARDUINO_ARCH_ASR6601)
+bool hal_pin_rst (u1_t val) {
+    if (val) SX126xReset();
+
+    return true;
+}
+#elif defined(ARDUINO_GENERIC_WLE5CCUX)
+bool hal_pin_rst (u1_t val) {
+#if 0
+    if (val == 0)
+    {
+        LL_RCC_RF_EnableReset();
+        LL_RCC_HSE_EnableTcxo();
+        LL_RCC_HSE_Enable();
+        while (!LL_RCC_HSE_IsReady());
+    }
+    else
+        LL_RCC_RF_DisableReset();
+#endif
+    return true;
+}
+#else
 // set radio RST pin to given value (or keep floating!)
 bool hal_pin_rst (u1_t val) {
     if (lmic_pins.rst == LMIC_UNUSED_PIN)
@@ -124,13 +145,7 @@ bool hal_pin_rst (u1_t val) {
     }
     return true;
 }
-#else
-bool hal_pin_rst (u1_t val) {
-    if (val) SX126xReset();
-
-    return true;
-}
-#endif /* ARDUINO_ARCH_ASR6601 */
+#endif /* ARDUINO_ARCH_ASR6601 || ARDUINO_GENERIC_WLE5CCUX */
 
 #if !defined(LMIC_USE_INTERRUPTS)
 static void hal_interrupt_init() {
@@ -260,13 +275,30 @@ bool hal_pin_tcxo (u1_t val) {
 #endif /* ARDUINO_NUCLEO_L073RZ */
 
     digitalWrite(lmic_pins.tcxo, val == 1 ? HIGH : LOW);
+
+#if !defined(ARDUINO_GENERIC_WLE5CCUX)
     return true;
+#else
+    return false;
+#endif /* ARDUINO_GENERIC_WLE5CCUX */
 #else
     return lmic_pins.tcxo == lmic_pins.rst ? false : true;
 #endif /* __ASR6501__ */
 }
 
-#if !defined(ARDUINO_ARCH_ASR6601)
+#if defined(ARDUINO_ARCH_ASR6601)
+void hal_pin_busy_wait (void) {
+    unsigned long start = micros();
+
+    while(((micros() - start) < MAX_BUSY_TIME) && (LORAC->SR & 0x100)) /* wait */;
+}
+#elif defined(ARDUINO_GENERIC_WLE5CCUX)
+void hal_pin_busy_wait (void) {
+    unsigned long start = micros();
+
+    while(((micros() - start) < MAX_BUSY_TIME) && LL_PWR_IsActiveFlag_RFBUSYS()) /* wait */;
+}
+#else
 void hal_pin_busy_wait (void) {
     if (lmic_pins.busy == LMIC_UNUSED_PIN) {
         // TODO: We could probably keep some state so we know the chip
@@ -282,13 +314,7 @@ void hal_pin_busy_wait (void) {
         while((micros() - start) < MAX_BUSY_TIME && digitalRead(lmic_pins.busy)) /* wait */;
     }
 }
-#else
-void hal_pin_busy_wait (void) {
-    unsigned long start = micros();
-
-    while(((micros() - start) < MAX_BUSY_TIME) && (LORAC->SR & 0x100)) /* wait */;
-}
-#endif /* ARDUINO_ARCH_ASR6601 */
+#endif /* ARDUINO_ARCH_ASR6601 || ARDUINO_GENERIC_WLE5CCUX */
 
 // -----------------------------------------------------------------------------
 // SPI
@@ -302,7 +328,98 @@ static const SPISettings settings(BCM2835_SPI_CLOCK_DIVIDER_64, BCM2835_SPI_BIT_
 static const SPISettings settings(LMIC_SPI_FREQ, MSBFIRST, SPI_MODE0);
 #endif
 
-#if !defined(ARDUINO_ARCH_ASR6601)
+#if defined(ARDUINO_ARCH_ASR6601)
+
+static void hal_spi_init () {
+    /* LMIC_SPI_FREQ = 1 MHz , 8 bit */
+    LORAC->SSP_CR0  = (11UL /* SCR */ << 8) | 0x07 /* DSS */;
+    LORAC->SSP_CPSR = 0x02; /* CPSDVR */
+}
+
+void hal_spi_select (int on) {
+    LORAC->NSS_CR = (!on ? HIGH : LOW);
+}
+
+// perform SPI transaction with radio
+u1_t hal_spi (u1_t out) {
+    u1_t res = SpiInOut(out);
+    return res;
+}
+
+#elif defined(ARDUINO_GENERIC_WLE5CCUX)
+#ifdef HAL_SUBGHZ_MODULE_ENABLED
+
+#define SUBGHZ_DEFAULT_TIMEOUT     100U    /* HAL Timeout in ms               */
+/* SystemCoreClock dividers. Corresponding to time execution of while loop.   */
+#define SUBGHZ_DEFAULT_LOOP_TIME   ((SystemCoreClock*28U)>>19U)
+
+static SUBGHZ_HandleTypeDef hsubghz = {.Init = {.BaudratePrescaler =
+                                               SUBGHZSPI_BAUDRATEPRESCALER_16 } };
+#endif /* HAL_SUBGHZ_MODULE_ENABLED */
+
+static void hal_spi_init () {
+#ifdef HAL_SUBGHZ_MODULE_ENABLED
+    HAL_SUBGHZ_Init(&hsubghz);
+#endif /* HAL_SUBGHZ_MODULE_ENABLED */
+}
+
+void hal_spi_select (int on) {
+    if (on)
+        LL_PWR_SelectSUBGHZSPI_NSS();
+    else
+        LL_PWR_UnselectSUBGHZSPI_NSS();
+}
+
+// perform SPI transaction with radio
+u1_t hal_spi (u1_t out) {
+#ifdef HAL_SUBGHZ_MODULE_ENABLED
+  HAL_StatusTypeDef status = HAL_OK;
+  __IO uint32_t count;
+
+  count = SUBGHZ_DEFAULT_TIMEOUT * SUBGHZ_DEFAULT_LOOP_TIME;
+
+  /* Wait until TXE flag is set */
+  do
+  {
+    if (count == 0U)
+    {
+      status = HAL_ERROR;
+      hsubghz.ErrorCode = HAL_SUBGHZ_ERROR_TIMEOUT;
+      break;
+    }
+    count--;
+  } while (READ_BIT(SUBGHZSPI->SR, SPI_SR_TXE) != (SPI_SR_TXE));
+
+  __IO uint8_t *spidr = ((__IO uint8_t *)&SUBGHZSPI->DR);
+  *spidr = out;
+
+  count = SUBGHZ_DEFAULT_TIMEOUT * SUBGHZ_DEFAULT_LOOP_TIME;
+
+  /* Wait until RXNE flag is set */
+  do
+  {
+    if (count == 0U)
+    {
+      status = HAL_ERROR;
+      hsubghz.ErrorCode = HAL_SUBGHZ_ERROR_TIMEOUT;
+      break;
+    }
+    count--;
+  } while (READ_BIT(SUBGHZSPI->SR, SPI_SR_RXNE) != (SPI_SR_RXNE));
+
+  return (uint8_t)(READ_REG(SUBGHZSPI->DR));
+#else
+  return 0;
+#endif /* HAL_SUBGHZ_MODULE_ENABLED */
+}
+
+u1_t lmic_wle_rf_output = HIGH;
+
+void hal_set_rf_output (u1_t val) {
+    lmic_wle_rf_output = val;
+}
+
+#else
 
 static void hal_spi_init () {
 #if defined(ENERGIA_ARCH_CC13XX) || defined(ENERGIA_ARCH_CC13X2)
@@ -335,26 +452,7 @@ u1_t hal_spi (u1_t out) {
     */
     return res;
 }
-
-#else /* ARDUINO_ARCH_ASR6601 */
-
-static void hal_spi_init () {
-    /* LMIC_SPI_FREQ = 1 MHz , 8 bit */
-    LORAC->SSP_CR0  = (11UL /* SCR */ << 8) | 0x07 /* DSS */;
-    LORAC->SSP_CPSR = 0x02; /* CPSDVR */
-}
-
-void hal_spi_select (int on) {
-    LORAC->NSS_CR = (!on ? HIGH : LOW);
-}
-
-// perform SPI transaction with radio
-u1_t hal_spi (u1_t out) {
-    u1_t res = SpiInOut(out);
-    return res;
-}
-
-#endif /* ARDUINO_ARCH_ASR6601 */
+#endif /* ARDUINO_ARCH_ASR6601 || ARDUINO_GENERIC_WLE5CCUX */
 
 // -----------------------------------------------------------------------------
 // TIME

@@ -122,6 +122,7 @@ typedef struct hardware_info {
     byte  storage;
     byte  rtc;
     byte  imu;
+    byte  pmu;
     byte  slave;
 } hardware_info_t;
 
@@ -158,6 +159,8 @@ enum
 	SOFTRF_MODEL_ACADEMY,
 	SOFTRF_MODEL_LEGO,
 	SOFTRF_MODEL_WEBTOP_USB,
+	SOFTRF_MODEL_PRIME_MK3,
+	SOFTRF_MODEL_BALKAN,
 };
 
 enum
@@ -289,8 +292,9 @@ enum
 enum
 {
 	STORAGE_NONE,
-	STORAGE_SD,
 	STORAGE_FLASH,
+	STORAGE_CARD,
+	STORAGE_FLASH_AND_CARD,
 };
 
 enum
@@ -303,7 +307,8 @@ enum
 {
 	IMU_NONE,
 	IMU_BNO080,
-	IMU_BMA423,
+	ACC_BMA423,
+	ACC_ADXL362,
 	IMU_ICM20948,
 	IMU_MPU9250,
 };

@@ -92,8 +92,11 @@ enum
 	SOC_NONE,
 	SOC_ESP8266,
 	SOC_ESP32,
+	SOC_ESP32S2,
+	SOC_ESP32S3,
 	SOC_RPi,
-	SOC_CC13XX,
+	SOC_CC13X0,
+	SOC_CC13X2,
 	SOC_STM32,
 	SOC_PSOC4,
 	SOC_NRF52,
@@ -144,5 +147,6 @@ extern const SoC_ops_t RP2040_ops;
 
 byte SoC_setup(void);
 void SoC_fini(int);
+uint32_t DevID_Mapper(uint32_t);
 
 #endif /* SOCHELPER_H */

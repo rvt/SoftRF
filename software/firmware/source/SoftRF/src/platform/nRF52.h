@@ -64,8 +64,22 @@ enum nRF52_board_id {
   NRF52_NORDIC_PCA10059,        /* reference low power board */
   NRF52_LILYGO_TECHO_REV_0,     /* 20-8-6 */
   NRF52_LILYGO_TECHO_REV_1,     /* 2020-12-12 */
-  NRF52_LILYGO_TECHO_REV_2      /* 2021-3-26 */
+  NRF52_LILYGO_TECHO_REV_2,     /* 2021-3-26 */
 };
+
+enum nRF52_display_id {
+  EP_UNKNOWN,
+  EP_GDEH0154D67,
+  EP_GDEP015OC1,
+  EP_DEPG0150BN,
+};
+
+typedef struct {
+  uint64_t         id;
+  nRF52_board_id   rev;
+  nRF52_display_id panel;
+  uint8_t          tag;
+} __attribute__((packed)) prototype_entry_t;
 
 struct rst_info {
   uint32_t reason;
@@ -76,9 +90,6 @@ struct rst_info {
   uint32_t excvaddr;
   uint32_t depc;
 };
-
-#define TECHO_DISPLAY_MODEL   GxEPD2_154_D67
-//#define TECHO_DISPLAY_MODEL   GxEPD2_154
 
 #define VBAT_MV_PER_LSB       (0.73242188F)   // 3.0V ADC range and 12-bit ADC resolution = 3000mV/4096
 #define SOC_ADC_VOLTAGE_DIV   (2.0F)          // 100K + 100K voltage divider on VBAT
@@ -273,14 +284,13 @@ struct rst_info {
 //#define USE_WEBUSB_SERIAL
 //#define USE_WEBUSB_SETTINGS
 //#define USE_USB_MIDI
-//#define USE_BLE_MIDI
+#define USE_BLE_MIDI
 //#define USE_PWM_SOUND
 //#define USE_GDL90_MSL
 //#define USE_IBEACON
 //#define EXCLUDE_NUS
-#define EXCLUDE_IMU
+//#define EXCLUDE_IMU
 #define USE_OGN_ENCRYPTION
-#define EXCLUDE_BOARD_SELF_DETECT
 
 /* FTD-012 data port protocol version 8 and 9 */
 #define PFLAA_EXT1_FMT  ",%d,%d,%d"
@@ -311,11 +321,7 @@ extern PCF8563_Class *rtc;
 extern const char *nRF52_Device_Manufacturer, *nRF52_Device_Model, *Hardware_Rev[];
 
 #if defined(USE_EPAPER)
-#include <GxEPD2_BW.h>
-
 typedef void EPD_Task_t;
-
-extern GxEPD2_BW<TECHO_DISPLAY_MODEL, TECHO_DISPLAY_MODEL::HEIGHT> *display;
 #endif /* USE_EPAPER */
 
 #endif /* PLATFORM_NRF52_H */

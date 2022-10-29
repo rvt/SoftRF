@@ -138,7 +138,9 @@ hardware_info_t hw_info = {
   .display  = DISPLAY_NONE,
   .storage  = STORAGE_NONE,
   .rtc      = RTC_NONE,
-  .imu      = IMU_NONE
+  .imu      = IMU_NONE,
+  .mag      = MAG_NONE,
+  .pmu      = PMU_NONE,
 };
 
 #define isTimeToExport() (millis() - ExportTimeMarker > 1000)
@@ -149,9 +151,11 @@ std::string input_line;
 TCPServer Traffic_TCP_Server;
 
 #if defined(USE_EPAPER)
-GxEPD2_BW<GxEPD2_270, GxEPD2_270::HEIGHT> __attribute__ ((common)) epd_waveshare(GxEPD2_270(/*CS=5*/ 8,
+GxEPD2_BW<GxEPD2_270, GxEPD2_270::HEIGHT> __attribute__ ((common)) epd_waveshare_W3(GxEPD2_270(/*CS=5*/ 8,
                                        /*DC=*/ 25, /*RST=*/ 17, /*BUSY=*/ 24));
-GxEPD2_BW<GxEPD2_270, GxEPD2_270::HEIGHT> *display;
+GxEPD2_BW<GxEPD2_270_T91, GxEPD2_270_T91::HEIGHT> __attribute__ ((common)) epd_waveshare_T91(GxEPD2_270_T91(/*CS=5*/ 8,
+                                       /*DC=*/ 25, /*RST=*/ 17, /*BUSY=*/ 24));
+GxEPD2_GFX *display;
 #endif /* USE_EPAPER */
 
 ui_settings_t ui_settings = {
@@ -395,10 +399,12 @@ static byte RPi_Display_setup()
   byte rval = DISPLAY_NONE;
 
 #if defined(USE_EPAPER)
-// GxEPD2_BW<GxEPD2_270, GxEPD2_270::HEIGHT> *epd_waveshare = new GxEPD2_BW<GxEPD2_270, GxEPD2_270::HEIGHT>(GxEPD2_270(/*CS=5*/ 8,
-//                                       /*DC=*/ 25, /*RST=*/ 17, /*BUSY=*/ 24));
 
-  display = &epd_waveshare;
+#if !defined(USE_GDEY027T91)
+  display = &epd_waveshare_W3;
+#else
+  display = &epd_waveshare_T91;
+#endif /* USE_GDEY027T91 */
 
   if (EPD_setup(true)) {
 
@@ -433,7 +439,6 @@ static void RPi_Display_fini(int reason)
 {
 #if defined(USE_EPAPER)
 
-  EPD_Clear_Screen();
   EPD_fini(reason, false);
 
   if ( RPi_EPD_update_thread != (pthread_t) 0)
@@ -770,71 +775,11 @@ void normal_loop()
 
     if (isTimeToExport()) {
 
-#if defined(ENABLE_RTLSDR) || defined(ENABLE_HACKRF) || defined(ENABLE_MIRISDR)
-  struct mode_s_aircraft *a;
-  int i = 0;
-
-  for (a = state.aircrafts; a; a = a->next) {
-    if (a->even_cprtime && a->odd_cprtime &&
-        abs((long) (a->even_cprtime - a->odd_cprtime)) <= MODE_S_INTERACTIVE_TTL * 1000 ) {
-      if (es1090_decode(a, &ThisAircraft, &fo)) {
-        memset(fo.raw, 0, sizeof(fo.raw));
-
-        Traffic_Update(&fo);
-
-        for (i=0; i < MAX_TRACKING_OBJECTS; i++) {
-          if (Container[i].addr == fo.addr) {
-            uint8_t alert_bak = Container[i].alert;
-            Container[i] = fo;
-            Container[i].alert = alert_bak;
-            break;
-          }
-        }
-        if (i < MAX_TRACKING_OBJECTS) continue;
-
-        int max_dist_ndx = 0;
-        int min_level_ndx = 0;
-
-        for (i=0; i < MAX_TRACKING_OBJECTS; i++) {
-          if (now() - Container[i].timestamp > ENTRY_EXPIRATION_TIME) {
-            Container[i] = fo;
-            break;
-          }
-#if !defined(EXCLUDE_TRAFFIC_FILTER_EXTENSION)
-          if (Container[i].distance > Container[max_dist_ndx].distance) {
-            max_dist_ndx = i;
-          }
-          if (Container[i].alarm_level < Container[min_level_ndx].alarm_level) {
-            min_level_ndx = i;
-          }
-#endif /* EXCLUDE_TRAFFIC_FILTER_EXTENSION */
-        }
-        if (i < MAX_TRACKING_OBJECTS) continue;
-
-#if !defined(EXCLUDE_TRAFFIC_FILTER_EXTENSION)
-        if (fo.alarm_level > Container[min_level_ndx].alarm_level) {
-          Container[min_level_ndx] = fo;
-          continue;
-        }
-
-        if (fo.distance    <  Container[max_dist_ndx].distance &&
-            fo.alarm_level >= Container[max_dist_ndx].alarm_level) {
-          Container[max_dist_ndx] = fo;
-          continue;
-        }
-#endif /* EXCLUDE_TRAFFIC_FILTER_EXTENSION */
-      }
-    }
-  }
-
-  interactiveRemoveStaleAircrafts(&state);
-#endif /* ENABLE_RTLSDR || ENABLE_HACKRF || ENABLE_MIRISDR */
-
       NMEA_Export();
+      GDL90_Export();
+      D1090_Export();
 
       if (isValidFix()) {
-        GDL90_Export();
-        D1090_Export();
         JSON_Export();
       }
       ExportTimeMarker = millis();
@@ -1076,8 +1021,9 @@ int main()
   Serial.println(F("Copyright (C) 2015-2022 Linar Yusupov. All rights reserved."));
   Serial.flush();
 
-#if defined(ENABLE_RTLSDR) || defined(ENABLE_HACKRF) || defined(ENABLE_MIRISDR)
   mode_s_init(&state);
+
+#if defined(ENABLE_RTLSDR) || defined(ENABLE_HACKRF) || defined(ENABLE_MIRISDR)
   sdrInitConfig();
 
   // Allocate the various buffers used by Modes

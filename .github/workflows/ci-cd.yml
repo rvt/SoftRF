@@ -7,7 +7,7 @@ on:
       - '*rc*'
     branches:
       - master
-      - prerelease2
+      - softrf-stratux
 
   workflow_dispatch:
 
@@ -97,7 +97,7 @@ jobs:
   prerelease:
     if: ${{ contains(github.event.ref, '-rc') }}
     needs: additional
-    uses: rvt/SoftRF/.github/workflows/ci-release.yml@prerelease
+    uses: rvt/SoftRF/.github/workflows/ci-release.yml@softrf-stratux
     with:
       prerelease: true
       environment: Prerelease
@@ -107,7 +107,7 @@ jobs:
   release:
     if: ${{ !contains(github.event.ref, '-rc') }}
     needs: additional
-    uses: rvt/SoftRF/.github/workflows/ci-release.yml@prerelease
+    uses: rvt/SoftRF/.github/workflows/ci-release.yml@softrf-stratux
     with:
       prerelease: false
       environment: Release

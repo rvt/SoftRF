@@ -6,8 +6,7 @@ on:
       - 'v*'
       - '*rc*'
     branches:
-      - master
-      - softrf-stratux
+      - *
 
   workflow_dispatch:
 

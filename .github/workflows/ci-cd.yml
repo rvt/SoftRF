@@ -72,15 +72,12 @@ jobs:
         run: |
           cd "$GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/${{ matrix.path }}"
           rename -v 's/SoftRF/${{ matrix.artifact }}/' SoftRF*
-          ls ${{ github.workspace }}/software/firmware/source/SoftRF/build/${{ matrix.path }}/
 
       - uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.artifact }}
-          path: |
+           path: |
             software/firmware/source/SoftRF/build/${{ matrix.path }}/
-            SoftRF/software/firmware/source/SoftRF/build/${{ matrix.path }}/
-            SoftRF/SoftRF/software/firmware/source/SoftRF/build/${{ matrix.path }}/
           if-no-files-found: error
 
   additional:

@@ -1299,10 +1299,8 @@ void GNSSTimeSync()
     GNSSTimeSyncMarker = millis();
 
     // GNSS_MODULE_AT65 does not provide millisecond accuracy for GNRMC/GNGGA that is required for stratux.
-    // to provide stratux with some sense of time we send right before GGA a PSOFT that will stratux
-    // use to notice start of the next second because.
-    // according to doc, AT65 will send block's of data starting each second, starting with GGA so we key on that..
-    // Note: For position data the GPS recalculates the location as if it where at second 000
+    // to provide stratux information on how this is configured we send PSOFT to stratux to let it know
+    // how to handle a specific GPS in regards to timing.
 #if defined(STRATUX)
     char sz[18];
     snprintf_P(sz, sizeof(sz),PSTR("$PSOFT,%s*"),
@@ -1455,6 +1453,7 @@ void PickGNSSFix()
           }
           else
 #endif
+
           {
             NMEA_Out(settings->nmea_out, &GNSSbuf[ndx], write_size, true);
           }
@@ -1462,6 +1461,7 @@ void PickGNSSFix()
           break;
         }
       }
+
 #if defined(USE_NMEA_CFG)
       NMEA_Process_SRF_SKV_Sentences();
 #endif /* USE_NMEA_CFG */

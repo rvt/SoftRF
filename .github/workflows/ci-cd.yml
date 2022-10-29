@@ -104,7 +104,7 @@ jobs:
       token: ${{ secrets.GITHUB_TOKEN }}
 
   release:
-    if: ${{ startsWith(github.event.ref, 'refs/tags/v') }}
+    if: ${{ contains(github.event.ref, '-rc') }}
     needs: additional
     uses: rvt/SoftRF/.github/workflows/ci-release.yml@prerelease
     with:

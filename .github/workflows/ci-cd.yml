@@ -78,7 +78,7 @@ jobs:
         with:
           name: SoftRF
           path: |
-            "${{ github.workspace }}/software/firmware/source/SoftRF/build/${{ matrix.path }}/"
+            "${{ github.workspace }}/software/firmware/source/SoftRF/build/${{ matrix.path }}/*.*"
           if-no-files-found: error
 
   additional:

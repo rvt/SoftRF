@@ -26,3 +26,6 @@ This version of SoftRF follow's changes to the origional SoftRF with modificatio
     - set "NMEA output" to Bluetooth (default)
 
 Follow the normal firmware update after downloading of this release, instructions for flashing can be found here : (https://github.com/lyusupov/SoftRF/tree/master/software/firmware/binaries)[Instructions how to flash]
+
+
+Commit hash : 

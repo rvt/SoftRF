@@ -29,7 +29,8 @@ jobs:
 
       - name: Generate Release SHA
         run: |
-          echo ${{ github.sha }} > RELEASE.txt
+          echo ${{ github.sha }} > HASH.txt
+          echo ${{ github.sha }} >> additional/STRATUX.md
 
       - name: PreRelease
         if: ${{ startsWith(inputs.prerelease, true) }}
@@ -39,7 +40,7 @@ jobs:
           token: ${{ secrets.token }}
           files: |
             SoftRF/*.zip
-            RELEASE.txt
+            HASH.txt
           prerelease: true
 
       - name: Release
@@ -50,5 +51,5 @@ jobs:
           token: ${{ secrets.token }}
           files: |
             SoftRF/*.zip
-            RELEASE.txt
+            HASH.txt
           prerelease: false

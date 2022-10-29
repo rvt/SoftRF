@@ -75,7 +75,7 @@ jobs:
 
       - uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.artifact }}
+          name: SoftRF
           path: |
             software/firmware/source/SoftRF/build/${{ matrix.path }}/
           if-no-files-found: error

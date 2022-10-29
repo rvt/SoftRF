@@ -106,12 +106,12 @@ jobs:
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
 
-#  release:
-#    if: ${{ !contains(github.event.ref, '-rc') }}
-#    needs: additional
-#    uses: rvt/SoftRF/.github/workflows/ci-release.yml@softrf-stratux
-#    with:
-#      prerelease: false
-#      environment: Release
-#    secrets:
-#      token: ${{ secrets.GITHUB_TOKEN }}
+  release:
+    if: ${{ !contains(github.event.ref, '-rc') }}
+    needs: additional
+    uses: rvt/SoftRF/.github/workflows/ci-release.yml@softrf-stratux
+    with:
+      prerelease: false
+      environment: Release
+    secrets:
+      token: ${{ secrets.GITHUB_TOKEN }}

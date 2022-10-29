@@ -72,6 +72,7 @@ jobs:
         run: |
           cd "$GITHUB_WORKSPACE/software/firmware/source/SoftRF/build/${{ matrix.path }}"
           rename -v 's/SoftRF/${{ matrix.artifact }}/' SoftRF*
+          ls .
 
       - uses: actions/upload-artifact@v3
         with:

@@ -92,7 +92,7 @@ jobs:
           if-no-files-found: error
 
   prerelease:
-    if: ${{ startsWith(github.event.ref, 'refs/heads/prerelease') }}
+    if: ${{ contains(github.event.ref, '-rc') }}
     needs: additional
     uses: rvt/SoftRF/.github/workflows/ci-release.yml@prerelease
     with:

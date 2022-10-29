@@ -40,7 +40,6 @@ jobs:
           files: |
             SoftRF/*.zip
             RELEASE.txt
-          draft: true
           prerelease: true
 
       - name: Release
@@ -52,5 +51,4 @@ jobs:
           files: |
             SoftRF/*.zip
             RELEASE.txt
-          draft: false
           prerelease: false

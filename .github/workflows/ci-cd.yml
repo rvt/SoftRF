@@ -97,7 +97,7 @@ jobs:
           if-no-files-found: error
 
   prerelease:
-    if: ${{ contains(github.event.ref, '-rc') }}
+    if: ${{ contains(github.event.ref, '-rc') && startsWith(github.ref_type, 'tag')}}
     needs: additional
     uses: rvt/SoftRF/.github/workflows/ci-release.yml@softrf-stratux
     with:
@@ -107,7 +107,7 @@ jobs:
       token: ${{ secrets.GITHUB_TOKEN }}
 
   release:
-    if: ${{ !contains(github.event.ref, '-rc') }}
+    if: ${{ !contains(github.event.ref, '-rc') && startsWith(github.ref_type, 'tag') }}
     needs: additional
     uses: rvt/SoftRF/.github/workflows/ci-release.yml@softrf-stratux
     with:

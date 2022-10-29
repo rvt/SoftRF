@@ -3,8 +3,8 @@ name: CI CD Pipeline
 on:
   push:
     tags:
-      - 'v.*'
-      - '.*-rc.*'
+      - 'v*'
+      - '*rc*'
     branches:
       - master
       - prerelease2

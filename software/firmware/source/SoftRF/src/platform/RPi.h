@@ -130,6 +130,7 @@ extern const char *Hardware_Rev[];
 
 //#define USE_TIME_SLOTS
 //#define USE_OGN_ENCRYPTION
+//#define ENABLE_D1090_INPUT
 
 //#define USE_OGN_RF_DRIVER
 //#define WITH_RFM95
@@ -138,11 +139,7 @@ extern const char *Hardware_Rev[];
 //#define WITH_SI4X32
 
 #if defined(USE_EPAPER)
-#include <GxEPD2_BW.h>
-
 typedef void* EPD_Task_t;
-
-extern GxEPD2_BW<GxEPD2_270, GxEPD2_270::HEIGHT> *display;
 #endif /* USE_EPAPER */
 
 #endif /* PLATFORM_RPI_H */

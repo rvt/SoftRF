@@ -129,6 +129,7 @@ struct rst_info {
 #define SOC_GPIO_PIN_LED        15 // MOSI (DIO_09)
 
 #define EXCLUDE_BMP280
+#define EXCLUDE_IMU
 
 #elif defined(BOARD_E70_XXXT14S2)
 /*
@@ -190,6 +191,7 @@ struct rst_info {
 #define EXCLUDE_WATCHOUT_MODE
 #define EXCLUDE_TRAFFIC_FILTER_EXTENSION
 #define EXCLUDE_LOG_GNSS_VERSION
+#define EXCLUDE_IMU
 
 //#define USE_TIME_SLOTS
 
@@ -202,12 +204,13 @@ extern SCSerial                 scSerial;
 
 #elif defined(ENERGIA_ARCH_CC13X2)
 
+#if defined(BOARD_CC1352R1_LAUNCHXL) || defined(BOARD_CC1312R1_LAUNCHXL)
 /*
- *  UART pins
+ *  UART pins                   CC1352R1_LAUNCHXL SOFTRF-UAT-CC1312R1
  *
- * Board_UART0_TX               GPIO 13
- * Board_UART0_RX               GPIO 12
- * BootLoader                   GPIO 15
+ * Board_UART0_TX               GPIO 13           GPIO 3
+ * Board_UART0_RX               GPIO 12           GPIO 2
+ * BootLoader                   GPIO 15           GPIO 1
  *
  */
 
@@ -216,10 +219,19 @@ extern SCSerial                 scSerial;
 
 #define EasyLink_setRfPwr       EasyLink_setRfPower
 
+#if defined(BOARD_CC1352R1_LAUNCHXL) /* CC1352R1_LAUNCHXL and LPSTK_CC1352R */
 #define SOC_GPIO_PIN_GNSS_RX    23  // GPIO 25
 #define SOC_GPIO_PIN_GNSS_TX    24  // GPIO 26
 
 #define SOC_GPIO_PIN_GNSS_PPS   25  // GPIO 27
+#elif defined(BOARD_CC1312R1_LAUNCHXL) /* SOFTRF-UAT-CC1312R1 */
+#define SOC_GPIO_PIN_GNSS_RX    6   // GPIO 24
+#define SOC_GPIO_PIN_GNSS_TX    23  // GPIO 25
+
+#define SOC_GPIO_PIN_GNSS_PPS   24  // GPIO 26
+#else
+#error "This board is not supported!"
+#endif
 
 /* Optional SX12XX SPI radio */
 #define SOC_GPIO_PIN_SS         36  // GPIO 18 'RTS'
@@ -258,6 +270,10 @@ extern SCSerial                 scSerial;
 #define EXCLUDE_GNSS_AT65
 
 #else
+#error "This board is not supported!"
+#endif /* BOARD_CC1352R1_LAUNCHXL || BOARD_CC1312R1_LAUNCHXL */
+
+#else
 #error "This hardware platform is not supported!"
 #endif /* ENERGIA_ARCH_CC13X0 & ENERGIA_ARCH_CC13X2 */
 
@@ -277,12 +293,9 @@ extern uint8_t LEDs[][3];
 
 #define U8X8_OLED_I2C_BUS_TYPE  U8X8_SSD1306_128X64_NONAME_HW_I2C
 
-/*
- * BUG:
- * return value of Wire.endTransmission() is always '4'
- * with Arduino Core(s) for CC13X0 and CC13X2
- */
-#define plat_oled_probe_func()    (true)
+extern bool CC13XX_OLED_probe_func();
+
+#define plat_oled_probe_func CC13XX_OLED_probe_func
 
 #endif /* USE_OLED */
 

@@ -19,7 +19,10 @@
 #ifndef EPDHELPER_H
 #define EPDHELPER_H
 
-#define ENABLE_GxEPD2_GFX       0
+#if defined(USE_EPAPER)
+#define ENABLE_GxEPD2_GFX       1
+#include <GxEPD2_BW.h>
+#endif /* USE_EPAPER */
 
 #define EPD_EXPIRATION_TIME     5 /* seconds */
 
@@ -63,8 +66,8 @@ enum
 	VIEW_MODE_RADAR,
 	VIEW_MODE_TEXT,
 	VIEW_MODE_BARO,
-	VIEW_MODE_IMU,
 	VIEW_MODE_TIME,
+	VIEW_MODE_IMU,
 
 	VIEW_MODES_COUNT,
 };
@@ -207,7 +210,6 @@ typedef struct navbox_struct
   uint32_t  timestamp;
 } navbox_t;
 
-void EPD_Clear_Screen();
 bool EPD_setup(bool);
 void EPD_loop();
 void EPD_fini(int, bool);
@@ -218,10 +220,6 @@ void EPD_Mode();
 void EPD_Up();
 void EPD_Down();
 void EPD_Message(const char *, const char *);
-
-#if defined(USE_EPAPER)
-EPD_Task_t EPD_Task(void *);
-#endif /* USE_EPAPER */
 
 void EPD_status_setup();
 void EPD_status_loop();
@@ -252,6 +250,11 @@ void EPD_time_setup();
 void EPD_time_loop();
 void EPD_time_next();
 void EPD_time_prev();
+
+#if defined(USE_EPAPER)
+EPD_Task_t EPD_Task(void *);
+extern GxEPD2_GFX *display;
+#endif /* USE_EPAPER */
 
 extern unsigned long EPDTimeMarker;
 extern bool EPD_vmode_updated;

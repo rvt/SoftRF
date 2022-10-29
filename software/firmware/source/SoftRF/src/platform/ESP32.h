@@ -27,7 +27,6 @@
 #include <ESPmDNS.h>
 #include <Update.h>
 #include <WiFiClient.h>
-#include <SPIFFS.h>
 
 /* Maximum of tracked flying objects is now SoC-specific constant */
 #define MAX_TRACKING_OBJECTS    8
@@ -115,10 +114,15 @@ extern Adafruit_NeoPixel strip;
 #define SOC_GPIO_PIN_GNSS_RX    23
 #define SOC_GPIO_PIN_GNSS_TX    12
 #define SOC_GPIO_PIN_BATTERY    36
+
 #if defined(CONFIG_IDF_TARGET_ESP32)
 #define SOC_GPIO_PIN_LED        25
-#else
+#elif defined(CONFIG_IDF_TARGET_ESP32S2)
 #define SOC_GPIO_PIN_LED        7
+#elif defined(CONFIG_IDF_TARGET_ESP32S3)
+#define SOC_GPIO_PIN_LED        SOC_UNUSED_PIN /* TBD 14? */
+#else
+#error "This ESP32 family build variant is not supported!"
 #endif
 
 #define SOC_GPIO_PIN_STATUS   (hw_info.model != SOFTRF_MODEL_PRIME_MK2 ?\
@@ -131,10 +135,12 @@ extern Adafruit_NeoPixel strip;
                                       SOC_GPIO_PIN_TBEAM_LED_V11 :      \
                                       SOC_UNUSED_PIN))))
 
-#define SOC_GPIO_PIN_GNSS_PPS (hw_info.model != SOFTRF_MODEL_PRIME_MK2 ?\
-                                SOC_UNUSED_PIN :                        \
-                                (hw_info.revision == 8 ?                \
-                                  SOC_GPIO_PIN_TBEAM_V08_PPS :          \
+#define SOC_GPIO_PIN_GNSS_PPS (hw_info.model == SOFTRF_MODEL_PRIME_MK3 ?  \
+                                SOC_GPIO_PIN_S3_GNSS_PPS :                \
+                                (hw_info.model == SOFTRF_MODEL_PRIME_MK2 ?\
+                                  (hw_info.revision >= 8 ?                \
+                                    SOC_GPIO_PIN_TBEAM_V08_PPS :          \
+                                    SOC_UNUSED_PIN) :                     \
                                   SOC_UNUSED_PIN))
 
 #define SOC_GPIO_PIN_BUZZER   (hw_info.model == SOFTRF_MODEL_PRIME_MK2 ?\
@@ -185,6 +191,20 @@ extern Adafruit_NeoPixel strip;
 // 1st I2C bus on the T-Beam
 #define SOC_GPIO_PIN_TBEAM_SDA          13
 #define SOC_GPIO_PIN_TBEAM_SCL          2
+
+// Hardware pin definitions for TTGO LoRa V2 board
+// with OLED SSD1306 0,96" I2C Display
+#define TTGO_V2_OLED_PIN_RST            U8X8_PIN_NONE // connected to CPU RST/EN
+#define TTGO_V2_OLED_PIN_SDA            21
+#define TTGO_V2_OLED_PIN_SCL            22
+#define TTGO_V2_PIN_GNSS_RX             34
+#define TTGO_V2_PIN_GNSS_TX             12
+#define TTGO_V2_PIN_GNSS_PPS            39
+
+// Hardware pin definitions for Heltec and TTGO-V1 LoRa-32 Boards with OLED SSD1306 I2C Display
+#define HELTEC_OLED_PIN_RST             U8X8_PIN_NONE // 16
+#define HELTEC_OLED_PIN_SDA             4
+#define HELTEC_OLED_PIN_SCL             15
 
 /* TTGO T-Watch section */
 // GNSS module
@@ -267,97 +287,79 @@ extern Adafruit_NeoPixel strip;
 #endif
 #define LV_VER_RES                      (240) //vertical
 
-/* ESP32-S3 DevKit section */
+/* ESP32-S3 section 1 (core) */
 #define SOC_GPIO_PIN_S3_CONS_RX         44
 #define SOC_GPIO_PIN_S3_CONS_TX         43
 
 // GNSS module
-#define SOC_GPIO_PIN_S3_GNSS_RX         18
-#define SOC_GPIO_PIN_S3_GNSS_TX         17
-#define SOC_GPIO_PIN_S3_GNSS_PPS        7
+#define SOC_GPIO_PIN_S3_GNSS_RX         9
+#define SOC_GPIO_PIN_S3_GNSS_TX         8
+#define SOC_GPIO_PIN_S3_GNSS_PPS        6
+#define SOC_GPIO_PIN_S3_GNSS_WAKE       7
 
 // USB
 #define SOC_GPIO_PIN_S3_USB_DP          20
 #define SOC_GPIO_PIN_S3_USB_DN          19
 
-// TFT
-#define SOC_GPIO_PIN_S3_TFT_MOSI        35
-#define SOC_GPIO_PIN_S3_TFT_MISO        SOC_UNUSED_PIN
-#define SOC_GPIO_PIN_S3_TFT_SCK         36
-#define SOC_GPIO_PIN_S3_TFT_SS          34
-#define SOC_GPIO_PIN_S3_TFT_DC          37
-#define SOC_GPIO_PIN_S3_TFT_RST         38
-#define SOC_GPIO_PIN_S3_TFT_BL          33
-
 // SX1262 (HPD16A)
-#define SOC_GPIO_PIN_S3_MOSI            35
-#define SOC_GPIO_PIN_S3_MISO            40
-#define SOC_GPIO_PIN_S3_SCK             36
-#define SOC_GPIO_PIN_S3_SS              41
-#define SOC_GPIO_PIN_S3_RST             38 /* shared with TFT RST (and/or I2C OLED RST) */
-#define SOC_GPIO_PIN_S3_BUSY            42 /* shared with HPD13A DIO2 */
+#define SOC_GPIO_PIN_S3_MOSI            11
+#define SOC_GPIO_PIN_S3_MISO            13
+#define SOC_GPIO_PIN_S3_SCK             12
+#define SOC_GPIO_PIN_S3_SS              10
+#define SOC_GPIO_PIN_S3_RST             5 /* shared with TFT RST (and/or I2C OLED RST) */
+#define SOC_GPIO_PIN_S3_BUSY            4 /* shared with HPD13A DIO2 */
 // SX1276 (HPD13A)
-#define SOC_GPIO_PIN_S3_DIO0            47
-#define SOC_GPIO_PIN_S3_DIO1            48
-#define SOC_GPIO_PIN_S3_DIO2            42 /* shared with HPD16A BUSY */
+#define SOC_GPIO_PIN_S3_DIO0            2
+#define SOC_GPIO_PIN_S3_DIO1            1
+#define SOC_GPIO_PIN_S3_DIO2            4 /* shared with HPD16A BUSY */
 
-// I2C
-#define SOC_GPIO_PIN_S3_SDA             8
-#define SOC_GPIO_PIN_S3_SCL             9
-
-/* 2nd I2C bus (PMU) */
-#define SOC_GPIO_PIN_S3_OLED_SDA        1
-#define SOC_GPIO_PIN_S3_OLED_SCL        4
-
-// microSD SPI
-#define SOC_GPIO_PIN_S3_SD_MOSI         11
-#define SOC_GPIO_PIN_S3_SD_MISO         13
-#define SOC_GPIO_PIN_S3_SD_SCK          12
-#define SOC_GPIO_PIN_S3_SD_SS           10
-
-// button (BOOT)
-#define SOC_GPIO_PIN_S3_BUTTON          0 // "strapping" pin (S)
-
-// battery voltage (ADC)
-#define SOC_GPIO_PIN_S3_BATTERY         2
+/* 2nd I2C bus (PMU, RTC) */
+#define SOC_GPIO_PIN_S3_PMU_SDA         42
+#define SOC_GPIO_PIN_S3_PMU_SCL         41
+#define SOC_GPIO_PIN_S3_PMU_IRQ         40
+#define SOC_GPIO_PIN_S3_RTC_IRQ         14
 
 // 32768 Hz crystal
 #define SOC_GPIO_PIN_S3_XP              15
 #define SOC_GPIO_PIN_S3_XN              16
 
-// LEDs, active state - HIGH
-#define SOC_GPIO_PIN_S3_STATUS          39
+// button (BOOT)
+#define SOC_GPIO_PIN_S3_BUTTON          0 // "strapping" pin (S)
+
+/* ESP32-S3 section 2 (reserved pins) */
+// 17,18 - I2C; 33,34,39,(47 ? - DC) - TFT/EINK; 35,36,37,38 - uSD; 2 - SX1276
+
+// 1st I2C bus (OLED display, sensors)
+#define SOC_GPIO_PIN_S3_SDA             17
+#define SOC_GPIO_PIN_S3_SCL             18
+
+// IMU
+#define SOC_GPIO_PIN_S3_IMU_MOSI        35
+#define SOC_GPIO_PIN_S3_IMU_MISO        37
+#define SOC_GPIO_PIN_S3_IMU_SCK         36
+#define SOC_GPIO_PIN_S3_IMU_SS          34
+#define SOC_GPIO_PIN_S3_IMU_INT12       33
+
+// microSD
+#define SOC_GPIO_PIN_S3_SD_MOSI         35
+#define SOC_GPIO_PIN_S3_SD_MISO         37
+#define SOC_GPIO_PIN_S3_SD_SCK          36
+#define SOC_GPIO_PIN_S3_SD_SS_DK        38
+#define SOC_GPIO_PIN_S3_SD_SS_TBEAM     47
+
+/* ESP32-S3 section 3 (spare pins) */
+// 3(S), 21, 39, 45(S), 46(S), 48
+
+// battery voltage (ADC)
+#define SOC_GPIO_PIN_S3_BATTERY         3 // (S)
+
 /* auxillary */
+// Devkit LEDs, active state - HIGH
 #define SOC_GPIO_PIN_S3_LED_RED         5
 #define SOC_GPIO_PIN_S3_LED_GREEN       6
 #define SOC_GPIO_PIN_S3_LED_BLUE        7
-#define SOC_GPIO_PIN_S3_LED4            38
-
-// Spare ESP32-S3 pins:
-// 46(S), 45(S), 21, 26
-// 3(S), 14
-// More spare pins when the devkit's Red and Green LEDs are not in use:
-// 5, 6
-// Few more when TFT is not connected:
-// 33, 34, 37
-// two more when there is no 32768 Hz crystal:
-// 15, 16
-// One more when SX1262 (HPD16A) is the only radio option:
-// 47
-
-// Hardware pin definitions for TTGO LoRa V2 board
-// with OLED SSD1306 0,96" I2C Display
-#define TTGO_V2_OLED_PIN_RST    U8X8_PIN_NONE // connected to CPU RST/EN
-#define TTGO_V2_OLED_PIN_SDA    21
-#define TTGO_V2_OLED_PIN_SCL    22
-#define TTGO_V2_PIN_GNSS_RX     34
-#define TTGO_V2_PIN_GNSS_TX     12
-#define TTGO_V2_PIN_GNSS_PPS    39
-
-// Hardware pin definitions for Heltec and TTGO-V1 LoRa-32 Boards with OLED SSD1306 I2C Display
-#define HELTEC_OLED_PIN_RST     U8X8_PIN_NONE // 16
-#define HELTEC_OLED_PIN_SDA     4
-#define HELTEC_OLED_PIN_SCL     15
+#define SOC_GPIO_PIN_S3_LED_WHITE       38
+#define SOC_GPIO_PIN_S3_LED_YELLOW      39
 
 extern WebServer server;
 
@@ -376,9 +378,18 @@ enum esp32_board_id {
   ESP32_TTGO_V2_OLED,
   ESP32_HELTEC_OLED,
   ESP32_TTGO_T_BEAM,
+  ESP32_TTGO_T_BEAM_SUPREME,
   ESP32_TTGO_T_WATCH,
   ESP32_S2_T8_V1_1,
   ESP32_S3_DEVKIT,
+};
+
+/* https://github.com/espressif/usb-pids/blob/main/allocated-pids.txt#L313 */
+enum softrf_usb_pid {
+  SOFTRF_USB_PID_WEBTOP     = 0x8131,
+  SOFTRF_USB_PID_STANDALONE = 0x8132,
+  SOFTRF_USB_PID_PRIME_MK3  = 0x8133,
+  SOFTRF_USB_PID_UF2_BOOT   = 0x8134,
 };
 
 struct rst_info {
@@ -397,6 +408,13 @@ struct rst_info {
 
 #define MakeFlashId(v,d)        ((v << 16) | d)
 
+#define MPU6886_REG_PWR_MGMT_1  (0x6B)
+#define MPU6886_REG_WHOAMI      (0x75)
+#define MPU9250_REG_PWR_MGMT_1  (0x6B)
+#define MPU9250_REG_WHOAMI      (0x75)
+#define QMI8658_REG_RESET       (0x60)
+#define QMI8658_REG_WHOAMI      (0x00)
+
 /* Disable brownout detection (avoid unexpected reset on some boards) */
 #define ESP32_DISABLE_BROWNOUT_DETECTOR 0
 
@@ -412,13 +430,15 @@ struct rst_info {
 #define USE_TIME_SLOTS
 
 /* Experimental */
-//#define USE_BLE_MIDI
+#define USE_BLE_MIDI
 //#define USE_GDL90_MSL
 #define USE_OGN_ENCRYPTION
 
 //#define EXCLUDE_GNSS_UBLOX    /* Neo-6/7/8 */
 #if !defined(STRATUX)
   #define ENABLE_UBLOX_RFS        /* revert factory settings (when necessary) but not in STRATUX case  */
+#else
+  #define EXCLUDE_WIFI          /* disable WiFi to avoid conflicts with Stratux WiFi */
 #endif /* STRATUX */
 #define EXCLUDE_GNSS_GOKE       /* 'Air530' GK9501 GPS/GLO/BDS (GAL inop.)   */
 //#define EXCLUDE_GNSS_AT65     /* 'fake Neo-6/8' on some 2018 T-Beam boards */
@@ -428,6 +448,7 @@ struct rst_info {
 #define EXCLUDE_CC13XX
 #define EXCLUDE_SOFTRF_HEARTBEAT
 #define EXCLUDE_LK8EX1
+//#define EXCLUDE_IMU
 
 #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3)
 #define EXCLUDE_NRF905
@@ -442,6 +463,9 @@ struct rst_info {
 #undef  SOC_GPIO_PIN_T8_S2_CONS_TX
 #define SOC_GPIO_PIN_T8_S2_CONS_RX      46
 #define SOC_GPIO_PIN_T8_S2_CONS_TX      45
+
+/* Experimental */
+//#define ENABLE_D1090_INPUT
 #endif /* USE_USB_HOST */
 #endif /* CONFIG_IDF_TARGET_ESP32S2 */
 
@@ -452,7 +476,11 @@ struct rst_info {
 #define PMK2_SLEEP_MODE 3      //  60 uA : axp.shutdown()
 
 #if defined(USE_OLED)
+#if defined(CONFIG_IDF_TARGET_ESP32S3)
+#define U8X8_OLED_I2C_BUS_TYPE  U8X8_SSD1306_128X64_NONAME_HW_I2C
+#else
 #define U8X8_OLED_I2C_BUS_TYPE  U8X8_SSD1306_128X64_NONAME_2ND_HW_I2C
+#endif /* CONFIG_IDF_TARGET_ESP32S3 */
 #endif /* USE_OLED */
 
 #endif /* PLATFORM_ESP32_H */

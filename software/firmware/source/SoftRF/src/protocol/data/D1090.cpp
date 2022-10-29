@@ -36,6 +36,12 @@
         }                                               \
       })
 
+#if defined(ENABLE_D1090_INPUT)
+#include "../radio/ES1090.h"
+
+extern mode_s_t state;
+#endif /* ENABLE_D1090_INPUT */
+
 static void D1090_Out(byte *buf, size_t size)
 {
   switch(settings->d1090)
@@ -76,7 +82,25 @@ void D1090_Export()
   String str;
   time_t this_moment = now();
 
-  if (settings->d1090 != D1090_OFF) {
+#if defined(ENABLE_D1090_INPUT) || \
+    defined(ENABLE_RTLSDR) || defined(ENABLE_HACKRF) || defined(ENABLE_MIRISDR)
+  struct mode_s_aircraft *a;
+
+  for (a = state.aircrafts; a; a = a->next) {
+    if (a->even_cprtime && a->odd_cprtime &&
+        abs((long) (a->even_cprtime - a->odd_cprtime)) <= MODE_S_INTERACTIVE_TTL * 1000 ) {
+      if (es1090_decode(a, &ThisAircraft, &fo)) {
+        memset(fo.raw, 0, sizeof(fo.raw));
+        Traffic_Update(&fo);
+        Traffic_Add(&fo);
+      }
+    }
+  }
+
+  interactiveRemoveStaleAircrafts(&state);
+#endif /* ENABLE_D1090_INPUT || ENABLE_RTLSDR || ENABLE_HACKRF || ENABLE_MIRISDR */
+
+  if (settings->d1090 != D1090_OFF && isValidFix()) {
     for (int i=0; i < MAX_TRACKING_OBJECTS; i++) {
       if (Container[i].addr && (this_moment - Container[i].timestamp) <= EXPORT_EXPIRATION_TIME) {
 
@@ -146,3 +170,59 @@ void D1090_Export()
     }
   }
 }
+
+#if defined(ENABLE_D1090_INPUT)
+
+void D1090_Import(uint8_t *msg)
+{
+  uint8_t buf[14];
+  struct mode_s_msg mm;
+
+  for (int i=0; i<28; i+=2) {
+    if (msg[1 + i] == ';') break;
+
+    uint8_t out = 0;
+    uint8_t h = msg[1 + i];
+
+    if (isdigit(h)) {
+      out |= ((h - '0'     ) << 4);
+    } else if (islower(h)) {
+      out |= ((h - 'a' + 10) << 4);
+    } else {
+      out |= ((h - 'A' + 10) << 4);
+    }
+
+    uint8_t l = msg[1 + i + 1];
+
+    if (isdigit(l)) {
+      out |= (l - '0'     );
+    } else if (islower(l)) {
+      out |= (l - 'a' + 10);
+    } else {
+      out |= (l - 'A' + 10);
+    }
+
+    buf[i>>1] = out;
+  }
+
+  mode_s_decode(&state, &mm, buf);
+
+  if (state.check_crc == 0 || mm.crcok) {
+
+//  printf("%02d %03d %02x%02x%02x\r\n", mm.msgtype, mm.msgbits, mm.aa1, mm.aa2, mm.aa3);
+
+      int acfts_in_sight = 0;
+      struct mode_s_aircraft *a = state.aircrafts;
+
+      while (a) {
+        acfts_in_sight++;
+        a = a->next;
+      }
+
+      if (acfts_in_sight < MAX_TRACKING_OBJECTS) {
+        interactiveReceiveData(&state, &mm);
+      }
+  }
+}
+
+#endif /* ENABLE_D1090_INPUT */

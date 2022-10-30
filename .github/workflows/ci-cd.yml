@@ -75,6 +75,7 @@ jobs:
           rename -v 's/SoftRF/${{ matrix.artifact }}/' SoftRF*
           # Create a zip with the contents so that the download artifact just get zipfiles
           zip -r ${{ matrix.artifact }}.zip .
+          rm -v !("${{ matrix.artifact }}.zip")
 
       - uses: actions/upload-artifact@v3
         with:

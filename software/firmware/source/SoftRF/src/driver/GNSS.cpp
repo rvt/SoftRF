@@ -1297,6 +1297,18 @@ void GNSSTimeSync()
             gnss.date.month(),
             gnss.date.year());
     GNSSTimeSyncMarker = millis();
+
+    // GNSS_MODULE_AT65 does not provide millisecond accuracy for GNRMC/GNGGA that is required for stratux.
+    // to provide stratux information on how this is configured we send PSOFT to stratux to let it know
+    // how to handle a specific GPS in regards to timing.
+#if defined(STRATUX)
+    char sz[18];
+    snprintf_P(sz, sizeof(sz),PSTR("$PSOFT,%s*"),
+    GNSS_name[hw_info.gnss]);
+    NMEA_add_checksum(sz, sizeof(sz) - strlen(sz));
+    NMEA_Out(settings->nmea_out, (byte *)sz, strlen(sz), false);
+#endif /* STRATUX */
+
   }
 }
 

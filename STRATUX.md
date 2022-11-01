@@ -2,10 +2,9 @@
 
 This version of SoftRF follow's changes to the origional SoftRF with modification to the following items:
 
-- Add $PSOFT to indicate to stratux how to handle this device
-- Add miliseconds to GGA and RMC, still need to decide if this is correct or not. During initial testing I found the SoftRF device about 300ft flying behind me
-- Baro source for stratux when hardware is available
-
+- Add $PSOFT to indicate to stratux how to handle this device with it's attached GPS
+- Baro source for Stratux when hardware is available
+- Allow setting aircraft id using $PSRFC
 
 ## Add modifications to the GPS setup to supper multiGNS, eg more accurate GPS
 
@@ -18,7 +17,11 @@ This version of SoftRF follow's changes to the origional SoftRF with modificatio
     - enable GPS, GLONASS and BEIDOU
 - disable LK8EX1 and LEGACY traffic messages
 
-**IMPORTANT**: after compiling/flashing, SoftRF needs to be configured as follows, using the respective method:
+## **IMPORTANT**: after compiling/flashing
+
+You can use the `SoftRF/software/app/Settings/basic.html` script loaded in a browser to generate PSRFC sentence.
+SoftRF needs to be configured as follows:
+
 - disable "NMEA sentences - Legacy"
 - when connecting SoftRF via USB with Stratux:
     - set "NMEA output" to USB

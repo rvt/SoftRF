@@ -610,6 +610,7 @@ TinyGPSCustom C_D1090_Output (gnss, "PSRFC", 16);
 TinyGPSCustom C_Stealth      (gnss, "PSRFC", 17);
 TinyGPSCustom C_noTrack      (gnss, "PSRFC", 18);
 TinyGPSCustom C_PowerSave    (gnss, "PSRFC", 19);
+TinyGPSCustom C_Aircraft_id  (gnss, "PSRFC", 20);
 
 #if defined(USE_OGN_ENCRYPTION)
 /* Security and privacy */
@@ -666,14 +667,15 @@ void NMEA_Process_SRF_SKV_Sentences()
           char psrfc_buf[MAX_PSRFC_LEN];
 
           snprintf_P(psrfc_buf, sizeof(psrfc_buf),
-              PSTR("$PSRFC,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d*"),
+              PSTR("$PSRFC,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d*"),
               PSRFC_VERSION,        settings->mode,     settings->rf_protocol,
               settings->band,       settings->aircraft_type, settings->alarm,
               settings->txpower,    settings->volume,   settings->pointer,
               settings->nmea_g,     settings->nmea_p,   settings->nmea_l,
               settings->nmea_s,     settings->nmea_out, settings->gdl90,
               settings->d1090,      settings->stealth,  settings->no_track,
-              settings->power_save );
+              settings->power_save,
+              settings->aircraft_id);
 
           NMEA_add_checksum(psrfc_buf, sizeof(psrfc_buf) - strlen(psrfc_buf));
 
@@ -794,6 +796,12 @@ void NMEA_Process_SRF_SKV_Sentences()
           {
             settings->power_save = atoi(C_PowerSave.value());
             Serial.print(F("PowerSave = ")); Serial.println(settings->power_save);
+            cfg_is_updated = true;
+          }
+          if (C_Aircraft_id.isUpdated())
+          {
+            settings->aircraft_id = atoi(C_Aircraft_id.value());
+            Serial.print(F("Aircraft id = ")); Serial.println(settings->aircraft_id);
             cfg_is_updated = true;
           }
 

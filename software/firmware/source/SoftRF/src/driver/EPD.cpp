@@ -37,6 +37,7 @@
 #include <Fonts/FreeSerif9pt7b.h>
 
 const char EPD_SoftRF_text1[] = "SoftRF";
+const char EPD_SoftRF_text1s[] = "Stratux";
 const char EPD_SoftRF_text2[] =  "and"  ;
 const char EPD_SoftRF_text3[] = "LilyGO";
 const char EPD_SoftRF_text4[] = "Author: ";
@@ -71,6 +72,8 @@ bool EPD_setup(bool splash_screen)
 
   int16_t  tbx1, tby1;
   uint16_t tbw1, tbh1;
+  int16_t  tbx1s, tby1s;
+  uint16_t tbw1s, tbh1s;
   int16_t  tbx2, tby2;
   uint16_t tbw2, tbh2;
   int16_t  tbx3, tby3;
@@ -87,6 +90,7 @@ bool EPD_setup(bool splash_screen)
 
   display->setFont(&FreeMonoBold24pt7b);
   display->getTextBounds(EPD_SoftRF_text1, 0, 0, &tbx1, &tby1, &tbw1, &tbh1);
+  display->getTextBounds(EPD_SoftRF_text1s, 0, 0, &tbx1s, &tby1s, &tbw1s, &tbh1s);
   display->getTextBounds(EPD_SoftRF_text3, 0, 0, &tbx3, &tby3, &tbw3, &tbh3);
 
   display->setFullWindow();
@@ -96,9 +100,14 @@ bool EPD_setup(bool splash_screen)
   if (hw_info.model == SOFTRF_MODEL_BADGE) {
 
     x = (display->width()  - tbw1) / 2;
-    y = (display->height() + tbh1) / 2 - tbh3;
-    display->setCursor(x, y);
+//    y = (display->height() + tbh1) / 2 - tbh3;
+    display->setCursor(x, 5 + tbh3);
     display->print(EPD_SoftRF_text1);
+
+    x = (display->width()  - tbw1s) / 2;
+    y = (display->height() + tbh1s) / 2 - tbh3;
+    display->setCursor(x, y + 5);
+    display->print(EPD_SoftRF_text1s);
 
     display->setFont(&FreeMono18pt7b);
     display->getTextBounds(EPD_SoftRF_text2, 0, 0, &tbx2, &tby2, &tbw2, &tbh2);

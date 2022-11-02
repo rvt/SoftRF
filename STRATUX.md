@@ -3,6 +3,7 @@
 This version of SoftRF follow's changes to the origional SoftRF with modification to the following items:
 
 - Add $PSOFT to indicate to stratux how to handle this device with it's attached GPS
+- Add Aircraft ID in $PSOFT
 - Baro source for Stratux when hardware is available
 - Allow setting aircraft id using $PSRFC
 

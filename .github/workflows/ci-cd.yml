@@ -96,12 +96,13 @@ jobs:
           name: additional
           path: |
             STRATUX.md
+            README.md
           if-no-files-found: error
 
   prerelease:
     if: ${{ contains(github.event.ref, '-rc') && startsWith(github.ref_type, 'tag')}}
     needs: additional
-    uses: rvt/SoftRF/.github/workflows/ci-release.yml@softrf-stratux
+    uses: ./.github/workflows/ci-release.yml
     with:
       prerelease: true
       environment: Prerelease
@@ -111,7 +112,7 @@ jobs:
   release:
     if: ${{ !contains(github.event.ref, '-rc') && startsWith(github.ref_type, 'tag') }}
     needs: additional
-    uses: rvt/SoftRF/.github/workflows/ci-release.yml@softrf-stratux
+    uses: ./.github/workflows/ci-release.yml
     with:
       prerelease: false
       environment: Release

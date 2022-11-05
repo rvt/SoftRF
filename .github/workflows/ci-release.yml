@@ -29,27 +29,30 @@ jobs:
 
       - name: Generate Release SHA
         run: |
-          echo ${{ github.sha }} > HASH.txt
-          echo ${{ github.sha }} >> additional/STRATUX.md
+          cat additional/README.md | \
+            awk 'BEGIN{ found=0} /\*\*T-Beam modifications:\*\*/{found=1}  {if (found) print }' | \
+            awk 'BEGIN{ found=0} /## Features/{found=1}  {if (!found) print }' > tmp
+          cat additional/STRATUX.md tmp > RELEASE.md
+          rm -f tmp
+          echo -en "\n\nCommit hash : " >> RELEASE.md
+          echo ${{ github.sha }} >> RELEASE.md
 
       - name: PreRelease
         if: ${{ startsWith(inputs.prerelease, true) }}
         uses: softprops/action-gh-release@v1
         with:
-          body_path: additional/STRATUX.md
+          body_path: RELEASE.md
           token: ${{ secrets.token }}
           files: |
             SoftRF/*.zip
-            HASH.txt
           prerelease: true
 
       - name: Release
         if: ${{ startsWith(inputs.prerelease, false) }}
         uses: softprops/action-gh-release@v1
         with:
-          body_path: additional/STRATUX.md
+          body_path: RELEASE.md
           token: ${{ secrets.token }}
           files: |
             SoftRF/*.zip
-            HASH.txt
           prerelease: false

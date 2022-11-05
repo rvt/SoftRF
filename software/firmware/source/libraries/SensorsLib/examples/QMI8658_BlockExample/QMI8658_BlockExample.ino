@@ -22,7 +22,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * @file      QMI8658_GetDataExample.ino
+ * @file      QMI8658_BallExample.ino
  * @author    Lewis He (lewishe@outlook.com)
  * @date      2022-10-16
  *
@@ -31,6 +31,8 @@
 #include <Wire.h>
 #include <SPI.h>
 #include "SensorQMI8658.hpp"
+#include <MadgwickAHRS.h>       //MadgwickAHRS from https://github.com/arduino-libraries/MadgwickAHRS
+#include "SH1106Wire.h"         //Oled display from https://github.com/ThingPulse/esp8266-oled-ssd1306
 
 #define USE_WIRE
 
@@ -39,12 +41,19 @@
 
 #define IMU_CS                      5
 
+SH1106Wire display(0x3c, I2C1_SDA, I2C1_SCL);
 SensorQMI8658 qmi;
 
 IMUdata acc;
 IMUdata gyr;
 
+Madgwick filter;
+unsigned long microsPerReading, microsPrevious;
 
+float posX = 64;
+float posY = 32;
+float lastPosX = posX;
+float lastPosY = posY;
 
 void setup()
 {
@@ -55,6 +64,8 @@ void setup()
     extern  bool setupPower();
     setupPower();
 #endif
+
+    display.init();
 
 #ifdef USE_WIRE
     //Using WIRE !!
@@ -77,6 +88,8 @@ void setup()
     Serial.print("Device ID:");
     Serial.println(qmi.getChipID(), HEX);
 
+    display.flipScreenVertically();
+
     qmi.configAccelerometer(
         /*
          * ACC_RANGE_2G
@@ -84,7 +97,7 @@ void setup()
          * ACC_RANGE_8G
          * ACC_RANGE_16G
          * */
-        SensorQMI8658::ACC_RANGE_4G,
+        SensorQMI8658::ACC_RANGE_2G,
         /*
          * ACC_ODR_1000H
          * ACC_ODR_500Hz
@@ -119,7 +132,7 @@ void setup()
         * GYR_RANGE_512DPS
         * GYR_RANGE_1024DPS
         * */
-        SensorQMI8658::GYR_RANGE_64DPS,
+        SensorQMI8658::GYR_RANGE_256DPS,
         /*
          * GYR_ODR_7174_4Hz
          * GYR_ODR_3587_2Hz
@@ -151,37 +164,58 @@ void setup()
     // Print register configuration information
     qmi.dumpCtrlRegister();
 
+    // start  filter
+    filter.begin(25);
+
+    // initialize variables to pace updates to correct rate
+    microsPerReading = 1000000 / 25;
+    microsPrevious = micros();
+
     Serial.println("Read data now...");
 }
 
+const uint8_t rectWidth = 10;
 
 void loop()
 {
+    float roll, pitch, heading;
 
-    if (qmi.getDataReady()) {
+    // check if it's time to read data and update the filter
+    if (micros() - microsPrevious >= microsPerReading) {
 
-        if (qmi.getAccelerometer(acc.x, acc.y, acc.z)) {
-            Serial.print("{ACCEL: ");
-            Serial.print(acc.x);
-            Serial.print(",");
-            Serial.print(acc.y);
-            Serial.print(",");
-            Serial.print(acc.z);
-            Serial.println("}");
+        // read raw data from IMU
+        if (qmi.getDataReady()) {
+
+            qmi.getAccelerometer(acc.x, acc.y, acc.z);
+            qmi.getGyroscope(gyr.x, gyr.y, gyr.z);
+
+            // update the filter, which computes orientation
+            filter.updateIMU(gyr.x, gyr.y, gyr.z, acc.x, acc.y, acc.z);
+
+            // print the heading, pitch and roll
+            roll = filter.getRoll();
+            pitch = filter.getPitch();
+            heading = filter.getYaw();
+
+            posX -= roll * 2;
+            posY += pitch;
+
+            Serial.printf("x:%.2f y:%.2f \n", posX, posY);
+            posX = constrain(posX, 0, display.width() - rectWidth);
+            posY = constrain(posY, 0, display.height() - rectWidth);
+
+            display.setColor(BLACK);
+            display.fillRect(lastPosX, lastPosY, 10, 10);
+            display.setColor(WHITE);
+            display.fillRect(posX, posY, 10, 10);
+            display.display();
+
+            lastPosX = posX;
+            lastPosY = posY;
         }
-
-        if (qmi.getGyroscope(gyr.x, gyr.y, gyr.z)) {
-            Serial.print("{GYRO: ");
-            Serial.print(gyr.x);
-            Serial.print(",");
-            Serial.print(gyr.y );
-            Serial.print(",");
-            Serial.print(gyr.z);
-            Serial.println("}");
-        }
-        Serial.printf("\t\t\t\t > %lu  %.2f *C\n", qmi.getTimestamp(), qmi.getTemperature_C());
+        // increment previous time, so we keep proper pace
+        microsPrevious = microsPrevious + microsPerReading;
     }
-    delay(100);
 }
 
 

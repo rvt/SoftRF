@@ -22,7 +22,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * @file      QMI8658_GetDataExample.ino
+ * @file      QMI8658_MadgwickAHRS.ino
  * @author    Lewis He (lewishe@outlook.com)
  * @date      2022-10-16
  *
@@ -31,6 +31,7 @@
 #include <Wire.h>
 #include <SPI.h>
 #include "SensorQMI8658.hpp"
+#include <MadgwickAHRS.h>       //MadgwickAHRS from https://github.com/arduino-libraries/MadgwickAHRS
 
 #define USE_WIRE
 
@@ -44,7 +45,8 @@ SensorQMI8658 qmi;
 IMUdata acc;
 IMUdata gyr;
 
-
+Madgwick filter;
+unsigned long microsPerReading, microsPrevious;
 
 void setup()
 {
@@ -84,7 +86,7 @@ void setup()
          * ACC_RANGE_8G
          * ACC_RANGE_16G
          * */
-        SensorQMI8658::ACC_RANGE_4G,
+        SensorQMI8658::ACC_RANGE_2G,
         /*
          * ACC_ODR_1000H
          * ACC_ODR_500Hz
@@ -119,7 +121,7 @@ void setup()
         * GYR_RANGE_512DPS
         * GYR_RANGE_1024DPS
         * */
-        SensorQMI8658::GYR_RANGE_64DPS,
+        SensorQMI8658::GYR_RANGE_256DPS,
         /*
          * GYR_ODR_7174_4Hz
          * GYR_ODR_3587_2Hz
@@ -151,37 +153,45 @@ void setup()
     // Print register configuration information
     qmi.dumpCtrlRegister();
 
+    // start  filter
+    filter.begin(25);
+
+    // initialize variables to pace updates to correct rate
+    microsPerReading = 1000000 / 25;
+    microsPrevious = micros();
+
     Serial.println("Read data now...");
 }
 
 
 void loop()
 {
+    float roll, pitch, heading;
 
-    if (qmi.getDataReady()) {
+    // check if it's time to read data and update the filter
+    if (micros() - microsPrevious >= microsPerReading) {
 
-        if (qmi.getAccelerometer(acc.x, acc.y, acc.z)) {
-            Serial.print("{ACCEL: ");
-            Serial.print(acc.x);
-            Serial.print(",");
-            Serial.print(acc.y);
-            Serial.print(",");
-            Serial.print(acc.z);
-            Serial.println("}");
+        // read raw data from IMU
+        if (qmi.getDataReady()) {
+            qmi.getAccelerometer(acc.x, acc.y, acc.z);
+            qmi.getGyroscope(gyr.x, gyr.y, gyr.z);
+            // update the filter, which computes orientation
+            filter.updateIMU(gyr.x, gyr.y, gyr.z, acc.x, acc.y, acc.z);
+
+            // print the heading, pitch and roll
+            roll = filter.getRoll();
+            pitch = filter.getPitch();
+            heading = filter.getYaw();
+            Serial.print("Orientation: ");
+            Serial.print(heading);
+            Serial.print(" ");
+            Serial.print(pitch);
+            Serial.print(" ");
+            Serial.println(roll);
         }
-
-        if (qmi.getGyroscope(gyr.x, gyr.y, gyr.z)) {
-            Serial.print("{GYRO: ");
-            Serial.print(gyr.x);
-            Serial.print(",");
-            Serial.print(gyr.y );
-            Serial.print(",");
-            Serial.print(gyr.z);
-            Serial.println("}");
-        }
-        Serial.printf("\t\t\t\t > %lu  %.2f *C\n", qmi.getTimestamp(), qmi.getTemperature_C());
+        // increment previous time, so we keep proper pace
+        microsPrevious = microsPrevious + microsPerReading;
     }
-    delay(100);
 }
 
 

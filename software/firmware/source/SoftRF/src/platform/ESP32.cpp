@@ -126,6 +126,7 @@ AXP20X_Class axp_xxx;
 XPowersPMU   axp_2xxx;
 
 static int esp32_board = ESP32_DEVKIT; /* default */
+static size_t ESP32_Min_AppPart_Size = 0;
 
 static portMUX_TYPE GNSS_PPS_mutex = portMUX_INITIALIZER_UNLOCKED;
 static portMUX_TYPE PMU_mutex      = portMUX_INITIALIZER_UNLOCKED;
@@ -183,10 +184,17 @@ static bool FATFS_is_mounted    = false;
 static bool ADB_is_open         = false;
 
 #if CONFIG_TINYUSB_MSC_ENABLED
-#include "USBMSC.h"
+  #if defined(USE_ADAFRUIT_MSC)
+    #include "Adafruit_TinyUSB.h"
 
-// USB Mass Storage object
-USBMSC usb_msc;
+    // USB Mass Storage object
+    Adafruit_USBD_MSC usb_msc;
+  #else
+    #include "USBMSC.h"
+
+    // USB Mass Storage object
+    USBMSC usb_msc;
+  #endif /* USE_ADAFRUIT_MSC */
 #endif /* CONFIG_TINYUSB_MSC_ENABLED */
 
 // file system object from SdFat
@@ -209,6 +217,41 @@ ui_settings_t ui_settings = {
 
 ui_settings_t *ui;
 uCDB<FatFileSystem, File> ucdb(fatfs);
+
+#if CONFIG_TINYUSB_MSC_ENABLED
+#if defined(USE_ADAFRUIT_MSC)
+// Callback invoked when received READ10 command.
+// Copy disk's data to buffer (up to bufsize) and
+// return number of copied bytes (must be multiple of block size)
+static int32_t ESP32_msc_read_cb (uint32_t lba, void* buffer, uint32_t bufsize)
+{
+  // Note: SPIFLash Bock API: readBlocks/writeBlocks/syncBlocks
+  // already include 4K sector caching internally. We don't need to cache it, yahhhh!!
+  return SPIFlash->readBlocks(lba, (uint8_t*) buffer, bufsize/512) ? bufsize : -1;
+}
+
+// Callback invoked when received WRITE10 command.
+// Process data in buffer to disk's storage and
+// return number of written bytes (must be multiple of block size)
+static int32_t ESP32_msc_write_cb (uint32_t lba, uint8_t* buffer, uint32_t bufsize)
+{
+  // Note: SPIFLash Bock API: readBlocks/writeBlocks/syncBlocks
+  // already include 4K sector caching internally. We don't need to cache it, yahhhh!!
+  return SPIFlash->writeBlocks(lba, buffer, bufsize/512) ? bufsize : -1;
+}
+
+// Callback invoked when WRITE10 command is completed (status received and accepted by host).
+// used to flush any pending cache.
+static void ESP32_msc_flush_cb (void)
+{
+  // sync with flash
+  SPIFlash->syncBlocks();
+
+  // clear file system's cache to force refresh
+  fatfs.cacheClear();
+}
+
+#else
 
 // Callback invoked when received READ10 command.
 // Copy disk's data to buffer (up to bufsize) and
@@ -241,6 +284,8 @@ static int32_t ESP32_msc_write_cb (uint32_t lba, uint32_t offset, uint8_t* buffe
 
   return rval;
 }
+#endif /* USE_ADAFRUIT_MSC */
+#endif /* CONFIG_TINYUSB_MSC_ENABLED */
 
 #include "SensorQMC6310.hpp"
 SensorQMC6310 mag;
@@ -300,6 +345,31 @@ static void ESP32_setup()
 #if ESP32_DISABLE_BROWNOUT_DETECTOR
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
 #endif
+
+  size_t flash_size = spi_flash_get_chip_size();
+  size_t min_app_size = flash_size;
+
+  esp_partition_iterator_t it;
+  const esp_partition_t *part;
+
+  it = esp_partition_find(ESP_PARTITION_TYPE_APP, ESP_PARTITION_SUBTYPE_ANY, NULL);
+  if (it) {
+    do {
+      part = esp_partition_get(it);
+      if (part->subtype == ESP_PARTITION_SUBTYPE_APP_FACTORY) {
+        continue;
+      }
+      if (part->size < min_app_size) {
+        min_app_size = part->size;
+      }
+    } while (it = esp_partition_next(it));
+
+    if (it) esp_partition_iterator_release(it);
+  }
+
+  if (min_app_size && (min_app_size != flash_size)) {
+    ESP32_Min_AppPart_Size = min_app_size;
+  }
 
   if (psramFound()) {
 
@@ -735,6 +805,26 @@ static void ESP32_setup()
         hw_info.storage = STORAGE_FLASH;
 
 #if CONFIG_TINYUSB_MSC_ENABLED
+  #if defined(USE_ADAFRUIT_MSC)
+        // Set disk vendor id, product id and revision
+        // with string up to 8, 16, 4 characters respectively
+        usb_msc.setID(ESP32S2_Device_Manufacturer, "Internal Flash", "1.0");
+
+        // Set callback
+        usb_msc.setReadWriteCallback(ESP32_msc_read_cb,
+                                     ESP32_msc_write_cb,
+                                     ESP32_msc_flush_cb);
+
+        // Set disk size, block size should be 512 regardless of spi flash page size
+        usb_msc.setCapacity(SPIFlash->size()/512, 512);
+
+        // MSC is ready for read/write
+        usb_msc.setUnitReady(true);
+
+        usb_msc.begin();
+
+  #else
+
         // Set disk vendor id, product id and revision
         // with string up to 8, 16, 4 characters respectively
         usb_msc.vendorID(ESP32S2_Device_Manufacturer);
@@ -750,6 +840,7 @@ static void ESP32_setup()
 
         // Set disk size, block size should be 512 regardless of spi flash page size
         usb_msc.begin(SPIFlash->size()/512, 512);
+  #endif /* USE_ADAFRUIT_MSC */
 #endif /* CONFIG_TINYUSB_MSC_ENABLED */
 
         FATFS_is_mounted = fatfs.begin(SPIFlash);
@@ -779,7 +870,8 @@ static void ESP32_setup()
 #endif /* CONFIG_IDF_TARGET_ESP32S3 */
   }
 
-#if ARDUINO_USB_CDC_ON_BOOT && (defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3))
+#if ARDUINO_USB_CDC_ON_BOOT && \
+    (defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3))
   if (USB.manufacturerName(ESP32S2_Device_Manufacturer)) {
     char usb_serial_number[16];
     uint16_t pid;
@@ -837,7 +929,7 @@ static void ESP32_post_init()
     Serial.println(hw_info.rtc     == RTC_PCF8563      ? F("PASS") : F("FAIL"));
     Serial.flush();
     Serial.print(F("BARO    : "));
-    Serial.println(hw_info.baro  == BARO_MODULE_BMP280 ? F("PASS") : F("FAIL"));
+    Serial.println(hw_info.baro  == BARO_MODULE_BMP280 ? F("PASS") : F("N/A"));
     Serial.flush();
 #if !defined(EXCLUDE_IMU)
     Serial.print(F("IMU     : "));
@@ -1114,8 +1206,13 @@ static void ESP32_fini(int reason)
 #if defined(CONFIG_IDF_TARGET_ESP32S3)
   if (ESP32_has_spiflash) {
 #if CONFIG_TINYUSB_MSC_ENABLED
+  #if defined(USE_ADAFRUIT_MSC)
+    usb_msc.setUnitReady(false);
+//  usb_msc.end(); /* N/A */
+  #else
     usb_msc.mediaPresent(false);
     usb_msc.end();
+  #endif /* USE_ADAFRUIT_MSC */
 #endif /* CONFIG_TINYUSB_MSC_ENABLED */
   }
 
@@ -1496,7 +1593,10 @@ static void ESP32_Sound_tone(int hz, uint8_t volume)
 
 static uint32_t ESP32_maxSketchSpace()
 {
-  return 0x1E0000; /* min_spiffs.csv */
+  return ESP32_Min_AppPart_Size ? ESP32_Min_AppPart_Size :
+           SoC->id == SOC_ESP32S3 ?
+             0x200000  /* 8MB-tinyuf2.csv */ :
+             0x1E0000; /* min_spiffs.csv */
 }
 
 static const int8_t ESP32_dBm_to_power_level[21] = {
@@ -1798,14 +1898,25 @@ static byte ESP32_Display_setup()
         rval = DISPLAY_OLED_1_3;
       }
     } else if (GPIO_21_22_are_busy) {
-      Wire1.begin(HELTEC_OLED_PIN_SDA , HELTEC_OLED_PIN_SCL);
-      Wire1.beginTransmission(SSD1306_OLED_I2C_ADDR);
-      has_oled = (Wire1.endTransmission() == 0);
-      WIRE_FINI(Wire1);
-      if (has_oled) {
-        u8x8 = &u8x8_heltec;
-        esp32_board = ESP32_HELTEC_OLED;
-        rval = DISPLAY_OLED_HELTEC;
+      if (hw_info.model == SOFTRF_MODEL_PRIME_MK2 && hw_info.revision >= 8) {
+        Wire1 = Wire;
+        Wire1.begin(TTGO_V2_OLED_PIN_SDA , TTGO_V2_OLED_PIN_SCL);
+        Wire1.beginTransmission(SSD1306_OLED_I2C_ADDR);
+        has_oled = (Wire1.endTransmission() == 0);
+        if (has_oled) {
+          u8x8 = &u8x8_ttgo;
+          rval = DISPLAY_OLED_TTGO;
+        }
+      } else {
+        Wire1.begin(HELTEC_OLED_PIN_SDA , HELTEC_OLED_PIN_SCL);
+        Wire1.beginTransmission(SSD1306_OLED_I2C_ADDR);
+        has_oled = (Wire1.endTransmission() == 0);
+        WIRE_FINI(Wire1);
+        if (has_oled) {
+          u8x8 = &u8x8_heltec;
+          esp32_board = ESP32_HELTEC_OLED;
+          rval = DISPLAY_OLED_HELTEC;
+        }
       }
     } else {
       Wire1.begin(TTGO_V2_OLED_PIN_SDA , TTGO_V2_OLED_PIN_SCL);
@@ -2394,7 +2505,7 @@ static bool ESP32_Baro_setup()
 
     WIRE_FINI(Wire);
 
-    if (hw_info.revision == 2 || hw_info.revision >= 8)
+    if (hw_info.revision == 2)
       return false;
 
 #if !defined(ENABLE_AHRS)
@@ -2535,6 +2646,9 @@ static void ESP32_Button_fini()
 
 #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3)
 
+#define USB_TX_FIFO_SIZE (MAX_TRACKING_OBJECTS * 65 + 75 + 75 + 42 + 20)
+#define USB_RX_FIFO_SIZE (256)
+
 #if defined(USE_USB_HOST)
 
 #include "usb/usb_host.h"
@@ -2542,8 +2656,6 @@ static void ESP32_Button_fini()
 #include "usb_host.hpp"
 #include "usb_acm.hpp"
 
-#define USB_TX_FIFO_SIZE (MAX_TRACKING_OBJECTS * 65 + 75 + 75 + 42 + 20)
-#define USB_RX_FIFO_SIZE (256)
 #define USB_MAX_WRITE_CHUNK_SIZE 256
 
 cbuf *USB_RX_FIFO, *USB_TX_FIFO;
@@ -2681,21 +2793,48 @@ static size_t ESP32S2_USB_write(const uint8_t *buffer, size_t size)
 
 #elif ARDUINO_USB_CDC_ON_BOOT
 
-#define USBSerial Serial
+#define USE_ASYNC_USB_OUTPUT
+#define USBSerial                Serial
+
+#if !ARDUINO_USB_MODE && defined(USE_ASYNC_USB_OUTPUT)
+#define USB_MAX_WRITE_CHUNK_SIZE CONFIG_TINYUSB_CDC_TX_BUFSIZE
+
+cbuf *USB_TX_FIFO;
+#endif /* USE_ASYNC_USB_OUTPUT */
 
 static void ESP32S2_USB_setup()
 {
-
+  USBSerial.setRxBufferSize(USB_RX_FIFO_SIZE);
+#if ARDUINO_USB_MODE
+  /* native CDC (HWCDC) */
+  USBSerial.setTxBufferSize(USB_TX_FIFO_SIZE);
+#elif defined(USE_ASYNC_USB_OUTPUT)
+  USB_TX_FIFO = new cbuf(USB_TX_FIFO_SIZE);
+#endif /* ARDUINO_USB_MODE */
 }
 
 static void ESP32S2_USB_loop()
 {
+#if !ARDUINO_USB_MODE && defined(USE_ASYNC_USB_OUTPUT)
+  if (USBSerial)
+  {
+    uint8_t chunk[USB_MAX_WRITE_CHUNK_SIZE];
 
+    size_t size = USBSerial.availableForWrite();
+    size = (size > USB_MAX_WRITE_CHUNK_SIZE ? USB_MAX_WRITE_CHUNK_SIZE : size);
+    size = (USB_TX_FIFO->available() < size ? USB_TX_FIFO->available() : size);
+
+    USB_TX_FIFO->read((char *) chunk, size);
+    USBSerial.write(chunk, size);
+  }
+#endif /* USE_ASYNC_USB_OUTPUT */
 }
 
 static void ESP32S2_USB_fini()
 {
-
+#if !ARDUINO_USB_MODE && defined(USE_ASYNC_USB_OUTPUT)
+  delete(USB_TX_FIFO);
+#endif /* USE_ASYNC_USB_OUTPUT */
 }
 
 static int ESP32S2_USB_available()
@@ -2724,9 +2863,22 @@ static size_t ESP32S2_USB_write(const uint8_t *buffer, size_t size)
 {
   size_t rval = size;
 
+#if ARDUINO_USB_MODE
+  /* Espressif native CDC (HWCDC) */
   if (USBSerial && (size < USBSerial.availableForWrite())) {
     rval = USBSerial.write(buffer, size);
   }
+#else
+  /* TinyUSB CDC (USBCDC) */
+#if defined(USE_ASYNC_USB_OUTPUT)
+  rval = USB_TX_FIFO->write((char *) buffer,
+                      (USB_TX_FIFO->room() > size ? size : USB_TX_FIFO->room()));
+#else
+  if (USBSerial) {
+    rval = USBSerial.write(buffer, size);
+  }
+#endif /* USE_ASYNC_USB_OUTPUT */
+#endif /* ARDUINO_USB_MODE */
 
   return rval;
 }

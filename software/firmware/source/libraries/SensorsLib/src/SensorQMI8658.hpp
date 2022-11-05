@@ -252,9 +252,35 @@ public:
     {
         uint8_t buffer[2];
         if (readRegister(QMI8658_REG_TEMPEARTURE_L, buffer, 2) !=  DEV_WIRE_ERR) {
-            return (float)buffer[1] + ((float)buffer[0] / 100.0);
+            return (float)buffer[1] + ((float)buffer[0] / 256.0);
         }
         return NAN;
+    }
+
+    void enableINT(IntPin pin, bool enable = true)
+    {
+        switch (pin) {
+        case IntPin1:
+            enable ? setRegisterBit(QMI8658_REG_CTRL1, 3) : clrRegisterBit(QMI8658_REG_CTRL1, 3);
+            break;
+        case IntPin2:
+            enable ? setRegisterBit(QMI8658_REG_CTRL1, 4) : clrRegisterBit(QMI8658_REG_CTRL1, 4);
+            break;
+        default:
+            break;
+        }
+    }
+
+    uint8_t getIrqStatus()
+    {
+        return readRegister(QMI8658_REG_STATUSINT);
+    }
+
+
+    void enableDataReadyINT(bool enable = true)
+    {
+        enable ? clrRegisterBit(QMI8658_REG_CTRL7, 5) :
+        setRegisterBit(QMI8658_REG_CTRL7, 5);
     }
 
     /**
@@ -388,8 +414,8 @@ public:
      * @retval
      */
     int configFIFO(FIFO_Mode    mode,
-                   Fifo_Samples samples, IntPin pin,
-                   uint8_t watermark)
+                   Fifo_Samples samples = FIFO_SAMPLES_16, IntPin pin = IntPin2,
+                   uint8_t watermark = 8)
     {
         bool enGyro = isEnableGyroscope();
         bool enAccel = isEnableAccelerometer();
@@ -682,12 +708,12 @@ public:
         readRegister(QMI8658_REG_CTRL1, buffer, 9);
         for (int i = 0; i < 9; ++i) {
 #if defined(ARDUINO)
-            Serial.printf("CTRL%d: 0x%02x", i + 1, buffer[i]);
+            Serial.printf("CTRL%d: REG:0x%02X HEX:0x%02X ", i + 1, QMI8658_REG_CTRL1 + i, buffer[i]);
 #else
             printf("CTRL%d: 0x%02x", i + 1, buffer[i]);
 #endif
 #if defined(ARDUINO)
-            Serial.print("\t\t BIN:");
+            Serial.print(" BIN:0b");
             Serial.println(buffer[i], BIN);
 #else
             LOG("\n");
@@ -698,8 +724,25 @@ public:
 #else
         printf("\n");
 #endif
+
+        buffer[0] =  readRegister(QMI8658_REG_FIFOCTRL);
+        Serial.printf("FIFOCTRL: REG:0x%02X HEX:0x%02X ",  QMI8658_REG_FIFOCTRL, buffer[0]);
+        Serial.print(" BIN:0b");
+        Serial.println(buffer[0], BIN);
+
     }
 
+    void powerDown()
+    {
+        disableAccelerometer();
+        disableGyroscope();
+        setRegisterBit(QMI8658_REG_CTRL1, 1);
+    }
+
+    void powerOn()
+    {
+        clrRegisterBit(QMI8658_REG_CTRL1, 1);
+    }
 
     int getStatusRegister()
     {
@@ -1138,7 +1181,15 @@ protected:
             return false;
         }
         // Eanble address auto increment, Big-Endian format
-        writeRegister(QMI8658_REG_CTRL1, 0x60);
+        // writeRegister(QMI8658_REG_CTRL1, 0x60);
+
+        // Little-Endian / address auto increment
+        // writeRegister(QMI8658_REG_CTRL1, 0x40);
+
+        //EN.ADDR_AI
+        setRegisterBit(QMI8658_REG_CTRL1, 6);
+        // writeRegister(QMI8658_REG_CTRL1, 0x78);
+
 
         // Use STATUSINT.bit7 as CTRL9 handshake
         writeRegister(QMI8658_REG_CTRL8, 0x80);

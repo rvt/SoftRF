@@ -22,9 +22,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * @file      QMI8658_GetDataExample.ino
+ * @file      QMI8658_InterruptExample.ino
  * @author    Lewis He (lewishe@outlook.com)
- * @date      2022-10-16
+ * @date      2022-11-03
  *
  */
 #include <Arduino.h>
@@ -32,19 +32,15 @@
 #include <SPI.h>
 #include "SensorQMI8658.hpp"
 
-#define USE_WIRE
+// #define USE_WIRE
 
 #define I2C1_SDA                    17
 #define I2C1_SCL                    18
-
-#define IMU_CS                      5
 
 SensorQMI8658 qmi;
 
 IMUdata acc;
 IMUdata gyr;
-
-
 
 void setup()
 {
@@ -65,7 +61,28 @@ void setup()
         }
     }
 #else
+
+#ifndef CONFIG_IDF_TARGET_ESP32
+//Use tbeams3 defalut spi pin
+#define SPI_MOSI                    (35)
+#define SPI_SCK                     (36)
+#define SPI_MISO                    (37)
+#define SPI_CS                      (47)
+#define IMU_CS                      (34)
+#define IMU_INT1                    (33)
+
+    SPI.begin(SPI_SCK, SPI_MISO, SPI_MOSI);
+    pinMode(SPI_CS, OUTPUT);    //sdcard pin set high
+    digitalWrite(SPI_CS, HIGH);
+    if (!qmi.begin(IMU_CS, SPI_MOSI, SPI_MISO, SPI_SCK)) {
+
+#else
+//Use esp32dev module defalut spi pin
+#define IMU_CS                      (5)
+#define IMU_INT1                    (15)
+#define IMU_INT2                    (22)
     if (!qmi.begin(IMU_CS)) {
+#endif
         Serial.println("Failed to find QMI8658 - check your wiring!");
         while (1) {
             delay(1000);
@@ -148,18 +165,39 @@ void setup()
     qmi.enableGyroscope();
     qmi.enableAccelerometer();
 
+
+    pinMode(IMU_INT1, INPUT);
+#ifdef  IMU_INT2
+    pinMode(IMU_INT2, INPUT);
+#endif
+
+    // qmi.enableINT(SensorQMI8658::IntPin1); //no use
+    // Enable data ready to interrupt pin2
+    qmi.enableINT(SensorQMI8658::IntPin2);
+    qmi.enableDataReadyINT();
+
     // Print register configuration information
     qmi.dumpCtrlRegister();
 
     Serial.println("Read data now...");
 }
 
-
-void loop()
+void readSensorData(const char *name)
 {
-
-    if (qmi.getDataReady()) {
-
+    uint8_t status =  qmi.getIrqStatus();
+    // status == 0x01
+    // If syncSmpl (CTRL7.bit7) = 1:
+    // 0: Sensor Data is not available
+    // 1: Sensor Data is available for reading
+    // If syncSmpl = 0, this bit shows the same value of INT2 level
+    Serial.print(name);
+    Serial.print(" -> [");
+    Serial.print(millis());
+    Serial.print("]: -<HEX> ");
+    Serial.print(status);
+    Serial.print(" -<BIN> ");
+    Serial.println(status, BIN);
+    if (status & 0x01) {
         if (qmi.getAccelerometer(acc.x, acc.y, acc.z)) {
             Serial.print("{ACCEL: ");
             Serial.print(acc.x);
@@ -181,8 +219,23 @@ void loop()
         }
         Serial.printf("\t\t\t\t > %lu  %.2f *C\n", qmi.getTimestamp(), qmi.getTemperature_C());
     }
-    delay(100);
+
 }
+
+void loop()
+{
+    if (digitalRead(IMU_INT1) == HIGH) {
+        readSensorData("INT1");
+    }
+
+#ifdef  IMU_INT2
+    if (digitalRead(IMU_INT2) == HIGH) {
+        readSensorData("INT2");
+    }
+#endif
+
+}
+
 
 
 

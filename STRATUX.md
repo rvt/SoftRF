@@ -1,34 +1,16 @@
 # Stratux Release
 
-This version of SoftRF follow's changes to the origional SoftRF with modification to the following items:
+This version of SoftRF combines changes from the [lyusupov/SoftRF](https://github.com/lyusupov/SoftRF) SoftRF repository,
+changes from [VirusPilot/SoftRF](http://github.com/viruspilot/SoftRF) and this repository.
 
-- Add $PSOFT to indicate to stratux how to handle this device with it's attached GPS
+## Modifications from [lyusupov/SoftRF](https://github.com/lyusupov/SoftRF)
+
+- Merged changes from master
+
+## Modifications from [rvt/SoftRF](http://github.com/RVT/SoftRF)
+
+- Send $PSOFT once a minute to indicate to Stratux how to handle this device with it's attached GPS
 - Add Aircraft ID in $PSOFT
-- Baro source for Stratux when hardware is available
-- Allow setting aircraft id using $PSRFC
+- Allow setting of Aircraft ID using $PSRFC
 
-## Add modifications to the GPS setup to supper multiGNS, eg more accurate GPS
-
-- u-blox GPS configurations (for **T-Beam**):
-    - enable GSA, GSV, VTG
-    - enable GPS, GALILEO, BEIDOU and SBAS
-    - enable NMEA extended
-- L76K GPS configuration (for **T-Echo**)
-    - enable GSA, GSV, VTG
-    - enable GPS, GLONASS and BEIDOU
-- disable LK8EX1 and LEGACY traffic messages
-
-## **IMPORTANT**: after compiling/flashing
-
-You can use the (https://rvt.github.io/2022-11-03-stratux-softrf/)[2022-11-03-stratux-softrf] script loaded in a browser to generate *$PSRFC* sentence.
-SoftRF needs to be configured as follows:
-
-- disable "NMEA sentences - Legacy"
-- when connecting SoftRF via USB with Stratux:
-    - set "NMEA output" to USB
-- when connecting SoftRF via Bluetooth LE with Stratux (**WORK IN PROGRESS, NOT IMPLEMENTED IN STRATUX YET**):
-    - set "NMEA output" to Bluetooth (default)
-
-Follow the normal firmware update after downloading of this release, instructions for flashing can be found here : (https://github.com/lyusupov/SoftRF/tree/master/software/firmware/binaries)[Instructions how to flash]
-
-Commit hash : 
+## Modifications from [VirusPilot/SoftRF](http://github.com/viruspilot/SoftRF)

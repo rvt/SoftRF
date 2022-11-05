@@ -14,4 +14,3 @@ changes from [VirusPilot/SoftRF](http://github.com/viruspilot/SoftRF) and this r
 - Allow setting of Aircraft ID using $PSRFC
 
 ## Modifications from [VirusPilot/SoftRF](http://github.com/viruspilot/SoftRF)
-

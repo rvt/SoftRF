@@ -87,6 +87,7 @@ TinyGPSCustom C_D1090_Output;
 TinyGPSCustom C_Stealth;
 TinyGPSCustom C_noTrack;
 TinyGPSCustom C_PowerSave; /* 19 */
+TinyGPSCustom C_Aircraft_id; /* 19 */
 
 #if defined(USE_OGN_ENCRYPTION)
 /* Security and privacy */
@@ -167,7 +168,8 @@ void NMEA_setup()
   C_D1090_Output.begin (gnss, psrf_c, term_num++);
   C_Stealth.begin      (gnss, psrf_c, term_num++);
   C_noTrack.begin      (gnss, psrf_c, term_num++);
-  C_PowerSave.begin    (gnss, psrf_c, term_num  ); /* 19 */
+  C_PowerSave.begin    (gnss, psrf_c, term_num++); /* 19 */
+  C_Aircraft_id.begin  (gnss, psrf_c, term_num  ); /* 19 */
 
 #if defined(USE_OGN_ENCRYPTION)
 /* Security and privacy */
@@ -703,6 +705,57 @@ void NMEA_GGA()
 #define SERIAL_FLUSH()       Serial.flush()
 #endif
 
+TinyGPSCustom C_Version      (gnss, "PSRFC", 1);
+TinyGPSCustom C_Mode         (gnss, "PSRFC", 2);
+TinyGPSCustom C_Protocol     (gnss, "PSRFC", 3);
+TinyGPSCustom C_Band         (gnss, "PSRFC", 4);
+TinyGPSCustom C_AcftType     (gnss, "PSRFC", 5);
+TinyGPSCustom C_Alarm        (gnss, "PSRFC", 6);
+TinyGPSCustom C_TxPower      (gnss, "PSRFC", 7);
+TinyGPSCustom C_Volume       (gnss, "PSRFC", 8);
+TinyGPSCustom C_Pointer      (gnss, "PSRFC", 9);
+TinyGPSCustom C_NMEA_gnss    (gnss, "PSRFC", 10);
+TinyGPSCustom C_NMEA_private (gnss, "PSRFC", 11);
+TinyGPSCustom C_NMEA_legacy  (gnss, "PSRFC", 12);
+TinyGPSCustom C_NMEA_sensors (gnss, "PSRFC", 13);
+TinyGPSCustom C_NMEA_Output  (gnss, "PSRFC", 14);
+TinyGPSCustom C_GDL90_Output (gnss, "PSRFC", 15);
+TinyGPSCustom C_D1090_Output (gnss, "PSRFC", 16);
+TinyGPSCustom C_Stealth      (gnss, "PSRFC", 17);
+TinyGPSCustom C_noTrack      (gnss, "PSRFC", 18);
+TinyGPSCustom C_PowerSave    (gnss, "PSRFC", 19);
+TinyGPSCustom C_Aircraft_id  (gnss, "PSRFC", 20);
+
+#if defined(USE_OGN_ENCRYPTION)
+/* Security and privacy */
+TinyGPSCustom S_Version      (gnss, "PSRFS", 1);
+TinyGPSCustom S_IGC_Key      (gnss, "PSRFS", 2);
+#endif /* USE_OGN_ENCRYPTION */
+
+#if defined(USE_SKYVIEW_CFG)
+#include "../../driver/EPD.h"
+
+TinyGPSCustom V_Version      (gnss, "PSKVC", 1);
+TinyGPSCustom V_Adapter      (gnss, "PSKVC", 2);
+TinyGPSCustom V_Connection   (gnss, "PSKVC", 3);
+TinyGPSCustom V_Units        (gnss, "PSKVC", 4);
+TinyGPSCustom V_Zoom         (gnss, "PSKVC", 5);
+TinyGPSCustom V_Protocol     (gnss, "PSKVC", 6);
+TinyGPSCustom V_Baudrate     (gnss, "PSKVC", 7);
+TinyGPSCustom V_Server       (gnss, "PSKVC", 8);
+TinyGPSCustom V_Key          (gnss, "PSKVC", 9);
+TinyGPSCustom V_Rotate       (gnss, "PSKVC", 10);
+TinyGPSCustom V_Orientation  (gnss, "PSKVC", 11);
+TinyGPSCustom V_AvDB         (gnss, "PSKVC", 12);
+TinyGPSCustom V_ID_Pref      (gnss, "PSKVC", 13);
+TinyGPSCustom V_VMode        (gnss, "PSKVC", 14);
+TinyGPSCustom V_Voice        (gnss, "PSKVC", 15);
+TinyGPSCustom V_AntiGhost    (gnss, "PSKVC", 16);
+TinyGPSCustom V_Filter       (gnss, "PSKVC", 17);
+TinyGPSCustom V_PowerSave    (gnss, "PSKVC", 18);
+TinyGPSCustom V_Team         (gnss, "PSKVC", 19);
+#endif /* USE_SKYVIEW_CFG */
+
 uint8_t C_NMEA_Source;
 
 static void nmea_cfg_restart()
@@ -728,14 +781,15 @@ void NMEA_Process_SRF_SKV_Sentences()
           char psrfc_buf[MAX_PSRFC_LEN];
 
           snprintf_P(psrfc_buf, sizeof(psrfc_buf),
-              PSTR("$PSRFC,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d*"),
+              PSTR("$PSRFC,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%X*"),
               PSRFC_VERSION,        settings->mode,     settings->rf_protocol,
               settings->band,       settings->aircraft_type, settings->alarm,
               settings->txpower,    settings->volume,   settings->pointer,
               settings->nmea_g,     settings->nmea_p,   settings->nmea_l,
               settings->nmea_s,     settings->nmea_out, settings->gdl90,
               settings->d1090,      settings->stealth,  settings->no_track,
-              settings->power_save );
+              settings->power_save,
+              settings->aircraft_id);
 
           NMEA_add_checksum(psrfc_buf, sizeof(psrfc_buf) - strlen(psrfc_buf));
 
@@ -856,6 +910,12 @@ void NMEA_Process_SRF_SKV_Sentences()
           {
             settings->power_save = atoi(C_PowerSave.value());
             Serial.print(F("PowerSave = ")); Serial.println(settings->power_save);
+            cfg_is_updated = true;
+          }
+          if (C_Aircraft_id.isUpdated())
+          {
+            sscanf(C_Aircraft_id.value(), "%X", &settings->aircraft_id);
+            Serial.print(F("Aircraft id = ")); Serial.println(settings->aircraft_id);
             cfg_is_updated = true;
           }
 

@@ -630,6 +630,12 @@ static void RP2040_SPI_begin()
 
 static void RP2040_swSer_begin(unsigned long baud)
 {
+  static bool swSer_initialized = false;
+  if (swSer_initialized) {
+    Serial_GNSS_In.end();
+  }
+  swSer_initialized = true;
+
   Serial_GNSS_In.begin(baud);
 }
 

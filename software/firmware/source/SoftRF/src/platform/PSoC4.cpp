@@ -458,6 +458,12 @@ static void PSoC4_SPI_begin()
 
 static void PSoC4_swSer_begin(unsigned long baud)
 {
+  static bool swSer_initialized = false;
+  if (swSer_initialized) {
+    Serial_GNSS_In.end();
+  }
+  swSer_initialized = true;
+
 #if defined(CubeCell_GPS)
   Serial_GNSS_In.begin(baud);
 #else

@@ -1260,6 +1260,11 @@ static void nRF52_SPI_begin()
 
 static void nRF52_swSer_begin(unsigned long baud)
 {
+  static bool swSer_initialized = false;
+  if (swSer_initialized) {
+    Serial_GNSS_In.end();
+  }
+  swSer_initialized = true;
   Serial_GNSS_In.setPins(SOC_GPIO_PIN_GNSS_RX, SOC_GPIO_PIN_GNSS_TX);
   Serial_GNSS_In.begin(baud);
 }

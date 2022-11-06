@@ -1137,10 +1137,23 @@ bool isValidGNSSFix()
 }
 
 byte GNSS_setup() {
-
   gnss_id_t gnss_id = GNSS_MODULE_NONE;
 
-  SoC->swSer_begin(SERIAL_IN_BR);
+  // List of known baudrates
+  const unsigned long baudrates[] = {
+    38400, 9600, 19200, 115200, 57600, 9600
+  };
+
+  // Try to detect GNSS module
+  Serial.println(F("GNSS Baud Detection.... "));
+  for (unsigned long baud : baudrates) {
+  Serial.print(F("Trying: ")); Serial.print(baud); Serial.println(F("baud"));
+    SoC->swSer_begin(baud);
+    if (generic_nmea_probe() != GNSS_MODULE_NONE) {
+      Serial.print(F("GNSS Detected at : ")); Serial.print(baud); Serial.println(F("baud"));
+      break;
+    }
+  }
 
   if (hw_info.model == SOFTRF_MODEL_PRIME_MK2 ||
       hw_info.model == SOFTRF_MODEL_PRIME_MK3 ||

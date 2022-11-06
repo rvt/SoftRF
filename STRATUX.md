@@ -12,5 +12,6 @@ changes from [VirusPilot/SoftRF](http://github.com/viruspilot/SoftRF) and this r
 - Send $PSOFT once a minute to indicate to Stratux how to handle this device with it's attached GPS
 - Add Aircraft ID in $PSOFT
 - Allow setting of Aircraft ID using $PSRFC
+- Detection of GNSS Baudrate
 
 ## Modifications from [VirusPilot/SoftRF](http://github.com/viruspilot/SoftRF)

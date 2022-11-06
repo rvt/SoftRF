@@ -355,6 +355,12 @@ extern uint8_t makeUBXCFG(uint8_t, uint8_t, uint8_t, const uint8_t *);
 
 static void ASR66_swSer_begin(unsigned long baud)
 {
+  static bool swSer_initialized = false;
+  if (swSer_initialized) {
+    Serial_GNSS_In.end();
+    Serial_GNSS_Out.end();
+  }
+  swSer_initialized = true;
   Serial_GNSS_In.begin (baud, SERIAL_8N1, SOC_GPIO_PIN_GNSS_RX,  SOC_GPIO_PIN_UART1_TX);
   Serial_GNSS_Out.begin(baud, SERIAL_8N1, SOC_GPIO_PIN_UART3_RX, SOC_GPIO_PIN_GNSS_TX);
 

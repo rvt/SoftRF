@@ -302,6 +302,12 @@ static void ESP8266_SPI_begin()
 
 static void ESP8266_swSer_begin(unsigned long baud)
 {
+  static bool swSer_initialized = false;
+  if (swSer_initialized) {
+    Serial_GNSS_In.end();
+  }
+  swSer_initialized = true;
+
 #if defined(USE_EXP_SW_SERIAL)
   Serial_GNSS_In.begin(baud);
 #else

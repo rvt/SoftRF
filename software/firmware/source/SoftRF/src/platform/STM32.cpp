@@ -867,6 +867,12 @@ static void STM32_SPI_begin()
 
 static void STM32_swSer_begin(unsigned long baud)
 {
+  static bool swSer_initialized = false;
+  if (swSer_initialized) {
+    Serial_GNSS_In.end();
+  }
+  swSer_initialized = true;
+
   Serial_GNSS_In.begin(baud);
 
 #if defined(ARDUINO_NUCLEO_L073RZ)

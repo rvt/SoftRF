@@ -87,7 +87,7 @@ TinyGPSCustom C_D1090_Output;
 TinyGPSCustom C_Stealth;
 TinyGPSCustom C_noTrack;
 TinyGPSCustom C_PowerSave; /* 19 */
-TinyGPSCustom C_Aircraft_id; /* 19 */
+TinyGPSCustom C_Aircraft_id;
 
 #if defined(USE_OGN_ENCRYPTION)
 /* Security and privacy */
@@ -168,8 +168,8 @@ void NMEA_setup()
   C_D1090_Output.begin (gnss, psrf_c, term_num++);
   C_Stealth.begin      (gnss, psrf_c, term_num++);
   C_noTrack.begin      (gnss, psrf_c, term_num++);
-  C_PowerSave.begin    (gnss, psrf_c, term_num++); /* 19 */
-  C_Aircraft_id.begin  (gnss, psrf_c, term_num  ); /* 19 */
+  C_PowerSave.begin    (gnss, psrf_c, term_num++);
+  C_Aircraft_id.begin  (gnss, psrf_c, term_num  ); /* 20 */
 
 #if defined(USE_OGN_ENCRYPTION)
 /* Security and privacy */
@@ -730,7 +730,7 @@ void NMEA_Process_SRF_SKV_Sentences()
           char psrfc_buf[MAX_PSRFC_LEN];
 
           snprintf_P(psrfc_buf, sizeof(psrfc_buf),
-              PSTR("$PSRFC,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%X*"),
+              PSTR("$PSRFC,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%06X*"),
               PSRFC_VERSION,        settings->mode,     settings->rf_protocol,
               settings->band,       settings->aircraft_type, settings->alarm,
               settings->txpower,    settings->volume,   settings->pointer,

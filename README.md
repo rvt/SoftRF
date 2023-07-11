@@ -1,4 +1,8 @@
+# I have abandoned this fork because Linar is not really helpfull in having a open discussions on thoughts and changes on SoftRF. I appreciate his work thoughbut he does not want to communicate on any proposals, thoughts and idea's for integration in other devices.
+
 # SoftRF DIY - Stratux compatible fork
+
+
 
 ## Modifications in this fork enable SoftRF to work as a proper GPS and Baro source for Stratux
 

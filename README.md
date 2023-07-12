@@ -7,28 +7,28 @@ Features of this fork including...
 Beyond Lyusupov's version 1.0:
 
 ### Collision prediction for circling aircraft
-Can set aircraft ID for self, ID to ignore, and ID to follow
-Support 3-level collision alarms via buzzer
-Can configure two simultaneous NMEA output destinations
-Settable baud rate for serial output
-Estimates wind while circling, uses for collision prediction
-Corrected frequency hopping and time slots
-Airborne devices relay radio packets from landed aircraft
-Louder buzzer via 2-pin differential drive, or external
-Includes strobe-control logic within SoftRF
-Can adjust SoftRF settings within T-Echo (without an app)
-Modified version of SkyView
-SkyStrobe - a controller for a visibility strobe (and more)
-Documentation files.
+* Can set aircraft ID for self, ID to ignore, and ID to follow
+* Support 3-level collision alarms via buzzer
+* Can configure two simultaneous NMEA output destinations
+* Settable baud rate for serial output
+* Estimates wind while circling, uses for collision prediction
+* Corrected frequency hopping and time slots
+* Airborne devices relay radio packets from landed aircraft
+* Louder buzzer via 2-pin differential drive, or external
+* Includes strobe-control logic within SoftRF
+* Can adjust SoftRF settings within T-Echo (without an app)
+* Modified version of SkyView
+* SkyStrobe - a controller for a visibility strobe (and more)
+* Documentation files.
 
 ### Latest additions:
-vMB09z: further compatibility improvements in transmissions and collision prediction
-Collision-danger traffic VOICE warnings! (not just beeps)
-Option to connect to ambient WiFi network instead of creating one
-Option to send data as TCP client instead of TCP server
-Specify server's IP address for TCP client, and choice of 2 ports
-Ability to use WiFi TCP & UDP NMEA outputs simultaneously
-These new WiFi options allow wireless output to XCvario
+* vMB09z: further compatibility improvements in transmissions and collision prediction
+* Collision-danger traffic VOICE warnings! (not just beeps)
+* Option to connect to ambient WiFi network instead of creating one
+* Option to send data as TCP client instead of TCP server
+* Specify server's IP address for TCP client, and choice of 2 ports
+* Ability to use WiFi TCP & UDP NMEA outputs simultaneously
+* These new WiFi options allow wireless output to XCvario
 
 # SoftRF DIY - Stratux compatible fork
 

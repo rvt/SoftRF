@@ -1,4 +1,34 @@
-# I have abandoned this fork because Linar is not really helpfull in having a open discussions on thoughts and changes on SoftRF. I appreciate his work thoughbut he does not want to communicate on any proposals, thoughts and idea's for integration in other devices.
+## I have abandoned this fork because Linar is not really helpfull in having a open discussions on thoughts and changes on SoftRF. I appreciate his work thoughbut he does not want to communicate on any proposals, thoughts and idea's for integration in other devices.
+
+For a good fork of SoftRF I can highly recommend [https://github.com/moshe-braner/SoftRF](https://github.com/moshe-braner/SoftRF) it contains various fixes and new ideas that are beening used by different soaring clubs.
+
+Features of this fork including...
+
+Beyond Lyusupov's version 1.0:
+
+### Collision prediction for circling aircraft
+Can set aircraft ID for self, ID to ignore, and ID to follow
+Support 3-level collision alarms via buzzer
+Can configure two simultaneous NMEA output destinations
+Settable baud rate for serial output
+Estimates wind while circling, uses for collision prediction
+Corrected frequency hopping and time slots
+Airborne devices relay radio packets from landed aircraft
+Louder buzzer via 2-pin differential drive, or external
+Includes strobe-control logic within SoftRF
+Can adjust SoftRF settings within T-Echo (without an app)
+Modified version of SkyView
+SkyStrobe - a controller for a visibility strobe (and more)
+Documentation files.
+
+### Latest additions:
+vMB09z: further compatibility improvements in transmissions and collision prediction
+Collision-danger traffic VOICE warnings! (not just beeps)
+Option to connect to ambient WiFi network instead of creating one
+Option to send data as TCP client instead of TCP server
+Specify server's IP address for TCP client, and choice of 2 ports
+Ability to use WiFi TCP & UDP NMEA outputs simultaneously
+These new WiFi options allow wireless output to XCvario
 
 # SoftRF DIY - Stratux compatible fork
 
